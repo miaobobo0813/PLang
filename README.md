@@ -66,14 +66,31 @@ e.g. `vars.new(i, number, 0)`
 
 **modifiers**
 1. `+`
+    - `+(number, number)` return `number` (also can use `dotNum`)
 2. `-`
+    - `-(number, number)` return `number` (also can use `dotNum`)
 3. `*`
-4. `\`` : division
+    - `*(number, number)` return `number` (also can use `dotNum`)
+4. `` ` : division
+    - ``(number, number)` return `dotNum`
 5. `%`
+    - `%(number, number)` return `number`
 6. `/`: or
+    - `/(boolean, boolean)` return `boolean`
 7. `&`: and
+    - `&(boolean, boolean)` return `boolean`
 8. `=`: equal
+    - `=(number, number)` return `boolean`
 9. `~`: opposite
+    - `~(boolean)` return `boolean`
+10. `<`: less than
+    - `<(number, number)` return  `boolean` (also can use `dotNum`)
+11. `>`: greater than
+    - `>(number, number)` return  `boolean` (also can use `dotNum`)
+12. `</=`: less than or equal
+    - `</=(number, number)` return  `boolean` (also can use `dotNum`)
+13. `>/=`: greater than or equal
+    - `>/=(number, number)` return  `boolean` (also can use `dotNum`)
 
 - **Types**
 1. `number`: a number.
