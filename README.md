@@ -13,9 +13,9 @@ e.g. `vars.new(i, number, 0)`
 1.`using`
 
 **modifiers**
-- `use(fileName)`: using `fileName` source in your code.
+- `use(fileName)`: use the source from `fileName` in your code.
   e.g. `using.use(student);`
-- `tips(text)`: add a comment in the line.
+- `tips(text)`: add a comment to the line.
   e.g. `using.tips("TODO: Here's something to do.");`
 - `sub(oldCode, newCode)`: replace `oldCode` with `newCode`.
   e.g. `using.sub(dotNum, dn);`
@@ -25,11 +25,11 @@ e.g. `vars.new(i, number, 0)`
 **modifiers**
 - `new(name, type, value)`: create a new variable in the code.
     e.g. `vars.new(n, number, 0);`
-- `[variable name]`: return the variable value.
+- `[variable name]`: returns the variable value.
     e.g. `vars.n`
 
 - modifiers
-- - `modify(value)`: modify the variable to `value`. you can use `var` in this modifier to refer to the variable.
+- - `modify(value)`: modify the variable to `value`. You can use `var` in this modifier to refer to the variable.
     e.g. `vars.n.modify(+(var, 1));`
 
 3.`ter`
@@ -37,7 +37,7 @@ e.g. `vars.new(i, number, 0)`
 **modifiers**
 - `otpt(text)`: print text in the terminal.
     e.g. `ter.otpt("Hello world!");`
-- `inpt(variable)`: input value and save in the `variable`.
+- `inpt(variable)`: input a value and save it to the `variable`.
     e.g. `ter.inpt(vars.n);`
 
 4.`loop`
@@ -51,7 +51,7 @@ e.g. `vars.new(i, number, 0)`
       vars.n.modify(+(var, 1));
   });
   ```
-- `for`: when the variable in range, run the code. use `.range(from: number, to: number, in: variable)` to write a range.
+- `for`: run the code while the variable is in the specified range. use `.range(from: number, to: number, in: variable)` to write a range.
     e.g.
   ```PLang
   vars.new(i, number, 0);
@@ -62,35 +62,35 @@ e.g. `vars.new(i, number, 0)`
 
 5.`operators`
 
-`operators.<(left, right)` and `<(left, right)` all available. (Just like used `using.sub(operators., )` before.)
+`operators.<(left, right)` and `<(left, right)` all available. (Just like using `using.sub(operators., )` to replace `operators.` as mentioned before.)
 
 **modifiers**
 1. `+`
-    - `+(number, number)` return `number` (also can use `dotNum`)
+    - `+(number, number)` returns `number` (also can use `dotNum`)
 2. `-`
-    - `-(number, number)` return `number` (also can use `dotNum`)
+    - `-(number, number)` returns `number` (also can use `dotNum`)
 3. `*`
-    - `*(number, number)` return `number` (also can use `dotNum`)
+    - `*(number, number)` returns `number` (also can use `dotNum`)
 4. `` ` `` : division
-    - ```(number, number)`` return `dotNum`
+    - ```(number, number)`` returns `dotNum`
 5. `%`
-    - `%(number, number)` return `number`
+    - `%(number, number)` returns `number`
 6. `/`: or
-    - `/(boolean, boolean)` return `boolean`
+    - `/(boolean, boolean)` returns `boolean`
 7. `&`: and
-    - `&(boolean, boolean)` return `boolean`
+    - `&(boolean, boolean)` returns `boolean`
 8. `=`: equal
-    - `=(number, number)` return `boolean`
+    - `=(number, number)` returns `boolean`
 9. `~`: opposite
-    - `~(boolean)` return `boolean`
+    - `~(boolean)` returns `boolean`
 10. `<`: less than
-    - `<(number, number)` return  `boolean` (also can use `dotNum`)
+    - `<(number, number)` returns  `boolean` (also can use `dotNum`)
 11. `>`: greater than
-    - `>(number, number)` return  `boolean` (also can use `dotNum`)
+    - `>(number, number)` returns  `boolean` (also can use `dotNum`)
 12. `</=`: less than or equal
-    - `</=(number, number)` return  `boolean` (also can use `dotNum`)
+    - `</=(number, number)` returns  `boolean` (also can use `dotNum`)
 13. `>/=`: greater than or equal
-    - `>/=(number, number)` return  `boolean` (also can use `dotNum`)
+    - `>/=(number, number)` returns  `boolean` (also can use `dotNum`)
 
 #### **Types**
 1. `number`: a number.
