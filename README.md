@@ -10,7 +10,7 @@ e.g. `vars.new(i, number, 0)`
 
 #### **Keywords**
 
-1. `using`
+1.`using`
 
 **modifiers**
 - `use(fileName)`: using `fileName` source in your code.
@@ -20,31 +20,31 @@ e.g. `vars.new(i, number, 0)`
 - `sub(oldCode, newCode)`: replace `oldCode` with `newCode`.
   e.g. `using.sub(dotNum, dn);`
 
-2. `vars`
+2.`vars`
 
 **modifiers**
 - `new(name, type, value)`: create a new variable in the code.
-  e.g. `vars.new(n, number, 0);`
+    e.g. `vars.new(n, number, 0);`
 - `[variable name]`: return the variable value.
-  e.g. `vars.n`
+    e.g. `vars.n`
 
-**modifiers**
-- `modify(value)`: modify the variable to `value`. you can use `var` in this modifier to refer to the variable.
-  e.g. `vars.n.modify(+(var, 1));`
+- modifiers
+- - `modify(value)`: modify the variable to `value`. you can use `var` in this modifier to refer to the variable.
+    e.g. `vars.n.modify(+(var, 1));`
 
-3. `ter`
+3.`ter`
 
 **modifiers**
 - `otpt(text)`: print text in the terminal.
-  e.g. `ter.otpt("Hello world!");`
+    e.g. `ter.otpt("Hello world!");`
 - `inpt(variable)`: input value and save in the `variable`.
-  e.g. `ter.inpt(vars.n);`
+    e.g. `ter.inpt(vars.n);`
 
-4. `loop`
+4.`loop`
 
 **modifiers**
 - `while`: when the condition is true, run the code in `codes`. Use `when` to write the condition.
-  e.g. 
+    e.g. 
   ```PLang
   loop.while.when(</=(vars.n, vars.k)).codes({
       ter.otpt(vars.n);
@@ -52,7 +52,7 @@ e.g. `vars.new(i, number, 0)`
   });
   ```
 - `for`: when the variable in range, run the code. use `.range(from: number, to: number, in: variable)` to write a range.
-  e.g.
+    e.g.
   ```PLang
   vars.new(i, number, 0);
   loop.for.range(from: 1, to: 5, in: vars.i).codes({
@@ -60,7 +60,7 @@ e.g. `vars.new(i, number, 0)`
   });
   ```
 
-5. `operators`
+5.`operators`
 
 `operators.<(left, right)` and `<(left, right)` all available. (Just like used `using.sub(operators., )` before.)
 
@@ -71,8 +71,8 @@ e.g. `vars.new(i, number, 0)`
     - `-(number, number)` return `number` (also can use `dotNum`)
 3. `*`
     - `*(number, number)` return `number` (also can use `dotNum`)
-4. `\`` : division
-    - `\`(number, number)` return `dotNum`
+4. `` ` `` : division
+    - `` `(number, number)`` return `dotNum`
 5. `%`
     - `%(number, number)` return `number`
 6. `/`: or
