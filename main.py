@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, List
+import os
+import subprocess
 
 # 1. Token 类型枚举（标识符正式升级为修饰符！）
 class TokenType(Enum):
@@ -384,12 +386,12 @@ class Parser:
         # 这样 operators.<(a, b) 就和 <(a, b) 完全等价了
         return opNode(op=op_token.value, left=left, right=right)
 
-class Interpreter:
+class Compiler:
     def __init__(self):
-        # 用来存放 PLang 里的变量，比如 {"i": 0, "pi": 3.14}
-        self.variables = {}
-        self.isStop = False  # 用来控制 loop.stop() 的执行
-        self.isSkip = False  # 用来控制 loop.skip() 的执行
+        self.codes = []
+
+    def add_code(self, code):
+        self.codes.append(code)
 
     # 核心分发器：根据节点类型，自动调用对应的 visit_xxx 方法
     def visit(self, node):
@@ -402,41 +404,67 @@ class Interpreter:
 
     # 1. 处理整个程序入口
     def visit_programNode(self, node):
+        self.add_code("#include <stdio.h>\n")
+        self.add_code("int main() {")
         for statement in node.statements:
             self.visit(statement)
+        self.add_code("return 0;")  # 添加 return 0; 语句
+        self.add_code("}")  # 添加 main 函数的结束括号
+        return "".join(self.codes)
 
     # 2. 处理变量声明 (vars.new)
     def visit_varsNewNode(self, node):
         value = self.visit(node.value)  # 算出初始值
-        self.variables[node.name] = value
+        self.add_code(f"{self.getCType(node.vType)} {node.name} = {value};")  # 生成 C 代码
         # print(f"Define variable: {node.name} -> {value}")
+    
+    def getCType(self, vType):
+        if vType == "number":
+            return "int"
+        elif vType == "dotNum":
+            return "double"
+        elif vType == "text":
+            return "char*"
+        elif vType == "boolean":
+            return "int"  # C 语言里没有 boolean 类型，通常用 int 来表示
+        else:
+            raise Exception(f"Unknown variable type: {vType}")
 
     # 3. 处理基础字面量 (数字、字符串)
     def visit_numberNode(self, node):
-        return node.value
+        return str(node.value)  # 直接返回数字的字符串形式，方便生成 C 代码
     
     def visit_textNode(self, node):
-        return node.value.strip('"')  # 去掉两边的引号
+        return node.value
 
     # 4. 处理获取变量 (比如 vars.i 里的 i)
     def visit_varsNode(self, node):
-        if node.name not in self.variables:
-            raise Exception(f"Runtime error: '{node.name}' has not defined.")
-        return self.variables[node.name]
+        return node.name  # 直接返回变量名，生成 C 代码时会用到这个名字
 
     # 5. 处理输出 (ter.otpt)
     def visit_callNode(self, node):
         if node.keyword == 'ter' and node.modifier == 'otpt':
-            for arg in node.args:
-                print(self.visit(arg), end="") 
+            args = [self.visit(arg) for arg in node.args]
+            format_str = ""
+            vars_list = []
+            for arg in args:
+                if arg.startswith('"'):
+                    format_str += arg.strip('"')  # 字符串直接拼进格式里
+                else:
+                    format_str += "%g "           # 数字用 %g 占位
+                    vars_list.append(arg)
+            if vars_list:
+                self.add_code(f'printf("{format_str}", {", ".join(vars_list)});')
+            else:
+                self.add_code(f'printf("{format_str}");')
         elif node.keyword == 'using' and node.modifier == 'tips':
             # 处理 using.tips
             # print(f"Comments: {self.visit(node.args[0])}")
             return
         elif node.keyword == 'loop' and node.modifier == 'stop':
-            self.isStop = True  # 设置停止标志，在 loopNode 里检查这个标志来决定是否跳出循环
+            self.add_code('break;')
         elif node.keyword == 'loop' and node.modifier == 'skip':
-            self.isSkip = True  # 设置跳过标志，在 loopNode 里检查这个标志来决定是否跳过当前迭代
+            self.add_code('continue;')  # 生成 C 代码来跳过当前迭代
         else:
             raise Exception(f"Syntax Error: Unknown call: {node.keyword}.{node.modifier}")
 
@@ -445,64 +473,54 @@ class Interpreter:
         left_val = self.visit(node.left)
         right_val = self.visit(node.right)
         
-        if node.op == '+':
-            return left_val + right_val
-        elif node.op == '<':
-            return left_val < right_val
-        elif node.op == '-':
-            return left_val - right_val
-        elif node.op == '*':
-            return left_val * right_val
-        elif node.op == '`':
-            return left_val / right_val
-        elif node.op == '%':
-            return left_val % right_val
-        elif node.op == '&':    
-            return left_val and right_val
-        elif node.op == '/':
-            return left_val or right_val
-        elif node.op == '>':
-            return left_val > right_val
-        elif node.op == '=':
-            return left_val == right_val
-        elif node.op == '</=':
-            return left_val <= right_val
-        elif node.op == '>/=':
-            return left_val >= right_val
+        op_map = {
+            '+': '+',
+            '-': '-',
+            '*': '*',
+            '`': '/',
+            '%': '%',
+            '<': '<',
+            '>': '>',
+            '</=': '<=',
+            '>/=': '>=',
+            '=': '==',
+            '&': '&&',
+            '/': '||'
+        }
+        if node.op in op_map:
+            return f"({left_val} {op_map[node.op]} {right_val})"
         else:
             raise Exception(f"Syntax Error: Unknown operator: {node.op}")
 
     # 7. 处理变量修改 (vars.i.modify(...))
     def visit_varModifyNode(self, node):
         new_value = self.visit(node.newValue)  # 算出新的值
-        self.variables[node.name] = new_value  # 更新字典里的变量
+        self.add_code(f"{node.name} = {new_value};")  # 生成 C 代码来修改变量
         # print(f"Modify: {node.name} -> {new_value}")
 
     # 8. 处理循环 (loop.while.when(...).codes({...}))
     def visit_loopNode(self, node):
-        # 只要条件为 True，就反复执行 body 里的语句
-        while self.visit(node.condition):
-            for statement in node.body:
-                self.visit(statement)
-                if self.isStop:  # 如果 loop.stop() 被调用了，就跳出循环
-                    self.isStop = False  # 重置停止标志，以便下次循环使用
-                    return
-                if self.isSkip:  # 如果 loop.skip() 被调用了，就跳过当前迭代
-                    self.isSkip = False  # 重置跳过标志，以便下次循环使用
-                    break  # 跳出当前迭代，继续下一轮循环
+        condition = self.visit(node.condition)  # 生成循环条件的 C 代码
+        self.add_code(f"while ({condition}) {{")  # 生成 while 循环的开始
+        
+        for statement in node.body:
+            self.visit(statement)  # 递归生成循环体内的代码
+        
+        self.add_code("}")  # 生成 while 循环的结束
     
 # ================= 最终测试运行 =================
 if __name__ == '__main__':
     test_plang_code = """
-    using.tips("PLang 编译器终极测试");
+    using.tips("PLang 编译器测试");
     vars.new(i, number, 1);
     vars.new(pi, dotNum, 3.14);
     loop.while.when(>/=(vars.i, 8)).codes({
         ter.otpt("当前 i 的值是：");
         vars.i.modify(*(var, 2));
         ter.otpt(vars.i);
-        ter.otpt("\n");
+        ter.otpt("\\n");
     });
+    ter.otpt(vars.pi);
     ter.otpt("测试结束！");
     """
     lexer = Lexer(test_plang_code)
@@ -514,5 +532,30 @@ if __name__ == '__main__':
     # print("AST Tree: ")
     # print(ast)
 
-    interpreter = Interpreter()
-    interpreter.visit(ast)
+    compiler = Compiler()
+    c_code = compiler.visit(ast)
+    print("Generated C Code: ")
+    print(c_code)
+    c_filename = "C:\\Users\\m2013\\Desktop\\plang_temp.c"
+    exe_filename = "C:\\Users\\m2013\\Desktop\\plang_program.exe"
+
+    with open(c_filename, "w", encoding="utf-8") as f:
+        f.write(c_code)
+    print(f"Save {c_filename}")
+
+    # 3. 调用系统的 GCC 编译器，把 .c 文件变成 .exe
+    print(f"Compiling {exe_filename} ...")
+    # 这里的命令等同于在命令行输入：gcc plang_temp.c -o plang_program.exe
+    result = subprocess.run(["gcc", c_filename, "-o", exe_filename], capture_output=True, text=True, encoding="utf-8")
+
+    if result.returncode == 0:
+        print(f"Compile success: {exe_filename}")
+        
+        # 4. 把中间的 C 代码文件删掉
+        os.remove(c_filename) 
+        print(f"Clean {c_filename} successfully. No one will see the generated C code, only the final .exe file will be left!")
+        print("Running the generated executable: ")
+        subprocess.run([exe_filename], encoding="utf-8")
+    else:
+        print("Compile failed with the following error:")
+        print(result.stderr)
