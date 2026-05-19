@@ -208,7 +208,7 @@ class Parser:
 
             if name == "modify":
                 # 💡 核心操作：临时记录当前正在被修改的变量名！
-                self.currentModifyTarget = name 
+                self.currentModifyTarget = methodToken  # methodToken 就是 vars.xxx 中的 xxx 
                 
                 value = self.parseExpression() # 递归解析括号里的表达式
                 
@@ -322,6 +322,14 @@ class Parser:
 
         if token.type == TokenType.KEYWORD and token.value == 'operators':
             return self.parseOperatorsStatement()  # 直接调用 operators 语句解析函数
+        
+        # 解析 var 变量
+        if token.type == TokenType.KEYWORD and token.value == 'var':
+            self.eat(TokenType.KEYWORD) # 吃掉 'var'
+            if self.currentModifyTarget:
+                return varsNode(name=self.currentModifyTarget)
+            else:
+                raise SyntaxError("Syntax error: 'var' used outside of a modify context.")
 
         # 解析 vars.xxx 这种变量获取
         if token.type == TokenType.KEYWORD and token.value == 'vars':
@@ -335,16 +343,7 @@ class Parser:
 
     def parseExpression(self):
         if self.currentToken().type == TokenType.SYMBOL:
-            op = self.currentToken().value
-            self.eat(TokenType.SYMBOL)
-            self.eat(TokenType.SYMBOL) # 吃掉 '('
-            
-            left = self.parseExpression()
-            self.eat(TokenType.SYMBOL)      # 吃掉 ','
-            right = self.parseExpression()
-            self.eat(TokenType.SYMBOL)      # 吃掉 ')'
-            
-            return opNode(op=op, left=left, right=right)
+            return self.parseOperatorsStatement()  # 如果是符号，说明可能是运算表达式，直接调用 operators 语句解析函数
         elif self.currentToken().type == TokenType.KEYWORD:
             token_val = self.currentToken().value
             if token_val == 'var' and self.currentModifyTarget:
@@ -356,13 +355,22 @@ class Parser:
     
     # 补全 operators 语句解析 (例如: operators.<(vars.a, vars.b); )
     def parseOperatorsStatement(self):
-        self.eat(TokenType.KEYWORD) # 吃掉 'operators'
-        self.eat(TokenType.SYMBOL)  # 吃掉 '.'
+        token = self.currentToken()
+        if token.type == TokenType.KEYWORD and token.value == 'operators':
+            self.eat(TokenType.KEYWORD) # 吃掉 'operators'
+            self.eat(TokenType.SYMBOL)  # 吃掉 '.'
         
         # 获取真实的运算符符号 (比如 <, +, = 等)
         op_token = self.currentToken()
         self.eat(TokenType.SYMBOL) 
-        
+
+        if self.currentToken().type == TokenType.SYMBOL and self.currentToken().value in {'/'}:
+            # 处理</=, >/=
+            op_token.value += self.currentToken().value
+            self.eat(TokenType.SYMBOL) # 吃掉 '/'
+            op_token.value += self.currentToken().value
+            self.eat(TokenType.SYMBOL) # 吃掉 '='
+
         self.eat(TokenType.SYMBOL)  # 吃掉 '('
         
         # 递归解析运算符左边的参数
@@ -442,7 +450,26 @@ class Interpreter:
             return left_val + right_val
         elif node.op == '<':
             return left_val < right_val
-        # 你可以在这里继续扩展 -, *, /, > 等其他运算符
+        elif node.op == '-':
+            return left_val - right_val
+        elif node.op == '*':
+            return left_val * right_val
+        elif node.op == '`':
+            return left_val / right_val
+        elif node.op == '%':
+            return left_val % right_val
+        elif node.op == '&':    
+            return left_val and right_val
+        elif node.op == '/':
+            return left_val or right_val
+        elif node.op == '>':
+            return left_val > right_val
+        elif node.op == '=':
+            return left_val == right_val
+        elif node.op == '</=':
+            return left_val <= right_val
+        elif node.op == '>/=':
+            return left_val >= right_val
         else:
             raise Exception(f"Syntax Error: Unknown operator: {node.op}")
 
@@ -469,14 +496,15 @@ class Interpreter:
 if __name__ == '__main__':
     test_plang_code = """
     using.tips("PLang 编译器终极测试");
-    vars.new(i, number, 0);
+    vars.new(i, number, 1);
     vars.new(pi, dotNum, 3.14);
-    loop.while.when(<(vars.i, 5)).codes({
+    loop.while.when(>/=(vars.i, 8)).codes({
         ter.otpt("当前 i 的值是：");
-        vars.i.modify(+(vars.i, 1));
+        vars.i.modify(*(var, 2));
         ter.otpt(vars.i);
         ter.otpt("\n");
     });
+    ter.otpt("测试结束！");
     """
     lexer = Lexer(test_plang_code)
     tokens = lexer.scan_all()
