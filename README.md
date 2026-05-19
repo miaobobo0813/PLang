@@ -4,11 +4,11 @@ NOTICE: This project is in development. Some of the code in this file is not fin
 
 ### PLang
 
-- **Basic usage**
+#### **Basic usage**
 `keyword.modifier().modifier()...;`
 e.g. `vars.new(i, number, 0)`
 
-- **Keywords**
+#### **Keywords**
 
 1. `using`
 
@@ -92,7 +92,7 @@ e.g. `vars.new(i, number, 0)`
 13. `>/=`: greater than or equal
     - `>/=(number, number)` return  `boolean` (also can use `dotNum`)
 
-- **Types**
+#### **Types**
 1. `number`: a number.
 2. `dotNum`: a dot number (float/double).
 3. `text`: a text (string).
