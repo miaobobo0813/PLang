@@ -72,7 +72,7 @@ e.g. `vars.new(i, number, 0)`
 3. `*`
     - `*(number, number)` return `number` (also can use `dotNum`)
 4. `` ` `` : division
-    - `` `(number, number)`` return `dotNum`
+    - ```(number, number)`` return `dotNum`
 5. `%`
     - `%(number, number)` return `number`
 6. `/`: or
