@@ -347,9 +347,6 @@ class Parser:
             return self.parseOperatorsStatement()  # 如果是符号，说明可能是运算表达式，直接调用 operators 语句解析函数
         elif self.currentToken().type == TokenType.KEYWORD:
             token_val = self.currentToken().value
-            if token_val == 'var' and self.currentModifyTarget:
-                self.eat(TokenType.KEYWORD)
-                return varsNode(name=self.currentModifyTarget)
             return self.parsePrimary() 
         else:
             return self.parsePrimary()
@@ -532,16 +529,17 @@ if __name__ == '__main__':
     # print("AST Tree: ")
     # print(ast)
 
+    print("Preparing to compile...")
     compiler = Compiler()
     c_code = compiler.visit(ast)
-    print("Generated C Code: ")
-    print(c_code)
+    # print("Generated C Code: ")
+    # print(c_code)
     c_filename = "C:\\Users\\m2013\\Desktop\\plang_temp.c"
     exe_filename = "C:\\Users\\m2013\\Desktop\\plang_program.exe"
 
     with open(c_filename, "w", encoding="utf-8") as f:
         f.write(c_code)
-    print(f"Save {c_filename}")
+    # print(f"Save {c_filename}")
 
     # 3. 调用系统的 GCC 编译器，把 .c 文件变成 .exe
     print(f"Compiling {exe_filename} ...")
@@ -549,12 +547,11 @@ if __name__ == '__main__':
     result = subprocess.run(["gcc", c_filename, "-o", exe_filename], capture_output=True, text=True, encoding="utf-8")
 
     if result.returncode == 0:
-        print(f"Compile success: {exe_filename}")
+        print(f"Compile {exe_filename} successfully.")
         
         # 4. 把中间的 C 代码文件删掉
         os.remove(c_filename) 
-        print(f"Clean {c_filename} successfully. No one will see the generated C code, only the final .exe file will be left!")
-        print("Running the generated executable: ")
+        print("Running the generated executable... Output:")
         subprocess.run([exe_filename], encoding="utf-8")
     else:
         print("Compile failed with the following error:")
