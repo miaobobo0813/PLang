@@ -207,7 +207,6 @@ class Parser:
             self.eat(TokenType.SYMBOL)  # 吃掉 '('
 
             if name == "modify":
-                # 💡 核心操作：临时记录当前正在被修改的变量名！
                 self.currentModifyTarget = methodToken  # methodToken 就是 vars.xxx 中的 xxx 
                 
                 value = self.parseExpression() # 递归解析括号里的表达式
