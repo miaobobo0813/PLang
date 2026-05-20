@@ -60,9 +60,28 @@ e.g. `vars.new(i, number, 0)`
   });
   ```
 
+- `stop()`: terminate the loop.
+    e.g.
+    ```PLang
+    loop.while.when(yes).codes({
+        ter.otpt("This while only run for once.");
+        loop.stop();
+    });
+    ```
+
+- `skip()`: skips the current iteration and proceeds to the next one.
+    e.g.
+    ```PLang
+    loop.while.when(yes).codes({
+        ter.otpt("This code will run.");
+        loop.skip();
+        ter.otpt("This code will be skipped.");
+    });
+    ```
+
 5.`operators`
 
-`operators.<(left, right)` and `<(left, right)` all available. (Just like using `using.sub(operators., )` to replace `operators.` as mentioned before.)
+`operators.<(left, right)` and `<(left, right)` are both available. (Just like using using.sub(operators., ) to omit the prefix.)
 
 **modifiers**
 1. `+`
@@ -94,6 +113,6 @@ e.g. `vars.new(i, number, 0)`
 
 #### **Types**
 1. `number`: a number.
-2. `dotNum`: a dot number (float/double).
+2. `dotNum`: a decimal number (float/double).
 3. `text`: a text (string).
-4. `boolean`: a bool value. it has `yes` and `no` 2 values.
+4. `boolean`: a bool value. it has 2 values: `yes` and `no`.
