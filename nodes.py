@@ -10,7 +10,7 @@ class textNode:
     value: str
 
 @dataclass
-class boolNode:
+class booleanNode:
     value: bool
 
 @dataclass
@@ -47,10 +47,16 @@ class loopWhileNode:
 
 @dataclass
 class loopForNode:
-    var: str
+    var: forRangeVarNode
     rangeFrom: Any
     rangeTo: Any
     body: List[Any]
+
+@dataclass
+class forRangeVarNode:
+    name: str
+    value: Any
+    newType: str
 
 @dataclass
 class programNode:

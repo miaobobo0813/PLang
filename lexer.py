@@ -1,8 +1,8 @@
-from token import *
+from tokens import *
 
 class Lexer:
-    def __init__(self, source_code: str):
-        self.source = source_code
+    def __init__(self, sourceCode: str):
+        self.source = sourceCode
         self.pos = 0
     
     def nextToken(self) -> Token:
@@ -21,6 +21,9 @@ class Lexer:
         if char in SYMBOLS:
             self.pos += 1
             return Token(TokenType.SYMBOL, char)
+        if char in OPERATORS:
+            self.pos += 1
+            return Token(TokenType.OPERATOR, char)
         if char == '"':
             self.pos += 1
             start = self.pos

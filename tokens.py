@@ -5,6 +5,7 @@ class TokenType(Enum):
     KEYWORD = auto()
     MODIFIER = auto()
     SYMBOL = auto()
+    OPERATOR = auto()
     NUMBER = auto()
     TEXT = auto() 
     EOF = auto()  
@@ -21,3 +22,6 @@ KEYWORDS = {
 }
 
 SYMBOLS = "()[]{};,."
+OPERATORS = {
+    '+', '-', '*', '`', '%', '=', '<', '>', '</=', '>/=', '&', '/', '~'
+}
