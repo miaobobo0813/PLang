@@ -35,8 +35,10 @@ class Parser:
                 return self.parseLoop()
             elif token.value == 'ter':
                 return self.parseTerminal()
+            elif token.value == 'using':
+                return self.parseUsing()
             else:
-                return self.parseGeneral()
+                raise ValueError(f"Unexpected keyword: {token.value}")
         elif token.type == TokenType.SYMBOL:
             raise ValueError(f"Unexpected symbol: {token.value}")
         else:
@@ -67,6 +69,7 @@ class Parser:
                 value = self.parseExpression()
                 self.nextToken()  # Skip ')'
                 self.nextToken()  # Skip ';'
+                self.currentModifyTarget = None
                 return varsModifyNode(name=modifier.value, value=value)
     
     def parseExpression(self):
@@ -83,6 +86,14 @@ class Parser:
             self.nextToken()  # Skip 'operators'
             self.nextToken()  # Skip '.'
             return self.parseOperator()
+        elif token.type == TokenType.KEYWORD and token.value == 'vars':
+            self.nextToken()  # Skip 'vars'
+            self.nextToken()  # Skip '.'
+            return varsNode(name=self.nowToken().value)
+        elif token.value == 'var':
+            if self.currentModifyTarget is None:
+                raise ValueError("Unexpected 'var' without modifying a variable.")
+            return varsNode(name=self.currentModifyTarget)
         else:
             raise ValueError(f"Unexpected token in expression: {token.value}")
     
@@ -93,6 +104,7 @@ class Parser:
         self.nextToken()  # Skip operator
         self.nextToken()  # Skip '('
         left = self.parseExpression()
+        self.nextToken()  # Skip ','
         right = self.parseExpression()
         self.nextToken()  # Skip ')'
         return opNode(operator=operator.value, left=left, right=right)
@@ -230,7 +242,34 @@ class Parser:
             if statements == []:
                 raise ValueError("Missing body for for loop")
 
+            self.nextToken() # Skip ';'
+
             return loopForNode(var=var, rangeFrom=rangeFrom, rangeTo=rangeTo, body=statements)
         else:
             raise ValueError(f"Expected loop modifier: {self.nowToken().value}. ('if' is developing...)")
-        
+    
+    def parseTerminal(self):
+        self.nextToken()  # Skip 'ter'
+        self.nextToken()  # Skip '.'
+        modifier = self.nextToken()
+        if modifier.value == 'otpt':
+            self.nextToken()  # Skip '('
+            value = self.parseExpression()
+            self.nextToken()  # Skip ')'
+            self.nextToken()  # Skip ';'
+            return terOtptNode(text=value)
+        else:
+            raise ValueError(f"Expected terminal modifier: {self.nowToken().value}. (inpt is in development...)")
+    
+    def parseUsing(self):
+        self.nextToken()  # Skip 'using'
+        self.nextToken()  # Skip '.'
+        modifier = self.nextToken()
+        if modifier.value == 'tips':
+            self.nextToken()  # Skip '('
+            value = self.parseExpression()
+            self.nextToken()  # Skip ')'
+            self.nextToken()  # Skip ';'
+            return
+        else:
+            raise ValueError(f"Expected using modifier: {self.nowToken().value}. (use is in development...)")

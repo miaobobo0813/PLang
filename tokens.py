@@ -8,6 +8,7 @@ class TokenType(Enum):
     OPERATOR = auto()
     NUMBER = auto()
     TEXT = auto() 
+    BOOLEAN = auto()
     EOF = auto()  
 
 @dataclass

@@ -35,10 +35,8 @@ class opNode:
     right: Any
 
 @dataclass
-class generalNode:
-    keyword: str
-    modifier: str
-    args: List[Any]
+class terOtptNode:
+    text: Any
 
 @dataclass
 class loopWhileNode:
