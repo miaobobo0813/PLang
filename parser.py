@@ -23,7 +23,6 @@ class Parser:
         statement = []
         while self.nowToken().type != TokenType.EOF:
             statement.append(self.parseStatement())
-            self.nextToken()
         return programNode(statements=statement)
     
     def parseStatement(self):
@@ -152,6 +151,8 @@ class Parser:
                 raise ValueError("Missing condition for while loop")
             if not statements:
                 raise ValueError("Missing body for while loop")
+
+            self.nextToken() # Skip ';'
 
             return loopWhileNode(condition=condition, body=statements)
         elif modifier.value == 'for':
