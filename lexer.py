@@ -1,5 +1,4 @@
-from modules import *
-from codes import *
+from token import *
 
 class Lexer:
     def __init__(self, source_code: str):

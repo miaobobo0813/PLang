@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from modules import *
 
 class TokenType(Enum):
     KEYWORD = auto()
