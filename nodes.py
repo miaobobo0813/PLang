@@ -57,5 +57,10 @@ class forRangeVarNode:
     newType: str
 
 @dataclass
+class loopNode:
+    stop: bool
+    skip: bool
+
+@dataclass
 class programNode:
     statements: List[Any]

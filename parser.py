@@ -49,7 +49,7 @@ class Parser:
         modifier = self.nextToken()
         if modifier.type != TokenType.MODIFIER:
             raise ValueError(f"Expected modifier \"{modifier.value}\"")
-        if modifier == 'new':
+        if modifier.value == 'new':
             self.nextToken()  # Skip '('
             name = self.nextToken()
             self.nextToken()  # Skip ','
@@ -70,6 +70,8 @@ class Parser:
                 self.nextToken()  # Skip ';'
                 self.currentModifyTarget = None
                 return varsModifyNode(name=modifier.value, value=value)
+            else:
+                raise SyntaxError("Need modify.")
     
     def parseExpression(self):
         token = self.nowToken()
@@ -168,7 +170,7 @@ class Parser:
                 self.nextToken() # Skip ','
                 rangeTo = self.parseExpression()
                 self.nextToken() # Skip ','
-                if self.nowToken() != 'vars':
+                if self.nowToken().value != 'vars':
                     raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
                 self.nextToken() # Skip 'vars'
                 self.nextToken() # Skip '.'
@@ -205,7 +207,7 @@ class Parser:
                 self.nextToken() # Skip ','
                 rangeTo = self.parseExpression()
                 self.nextToken() # Skip ','
-                if self.nowToken() != 'vars':
+                if self.nowToken().value != 'vars':
                     raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
                 self.nextToken() # Skip 'vars'
                 self.nextToken() # Skip '.'
@@ -246,6 +248,16 @@ class Parser:
             self.nextToken() # Skip ';'
 
             return loopForNode(var=var, rangeFrom=rangeFrom, rangeTo=rangeTo, body=statements)
+        elif modifier.value == 'stop':
+            self.nextToken() # Skip '('
+            self.nextToken() # Skip ')'
+            self.nextToken() # Skip ';'
+            return loopNode(stop=True, skip=False)
+        elif modifier.value == 'skip':
+            self.nextToken() # Skip '('
+            self.nextToken() # Skip ')'
+            self.nextToken() # Skip ';'
+            return loopNode(stop=False, skip=True)
         else:
             raise ValueError(f"Expected loop modifier: {self.nowToken().value}. ('if' is developing...)")
     
@@ -268,9 +280,9 @@ class Parser:
         modifier = self.nextToken()
         if modifier.value == 'tips':
             self.nextToken()  # Skip '('
-            value = self.parseExpression()
+            self.parseExpression()
             self.nextToken()  # Skip ')'
             self.nextToken()  # Skip ';'
-            return
+            return None
         else:
             raise ValueError(f"Expected using modifier: {self.nowToken().value}. (use is in development...)")
