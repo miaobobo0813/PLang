@@ -98,7 +98,7 @@ class compile:
             self.addCode(f"printf(\"%d\", {text});")
         elif text.replace('.', '').isdigit() or (text.startswith('-') and text[1:].replace('.', '').isdigit()):
             if '.' in text:
-                self.addCode(f'printf(\"%f\", {text});')
+                self.addCode(f'printf(\"%.16g\", {text});')
             else:
                 self.addCode(f'printf(\"%d\", {text});')
         else:
@@ -108,7 +108,7 @@ class compile:
             elif self.varsTypeMap[text] == 'text':
                 printfCode = '%s'
             elif self.varsTypeMap[text] == 'dotNum':
-                printfCode = '%llf'
+                printfCode = '%.16g'
             self.addCode(f'printf(\"{printfCode}\", {text});')
 
     
