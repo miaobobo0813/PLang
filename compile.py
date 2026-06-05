@@ -85,4 +85,7 @@ class compile:
     
     def visit_terOtptNode(self, node):
         text = self.visit(node.text)
-        self.addCode(f"printf(\"%s\", {text})")
+        self.addCode(f"printf(\"%s\", {text});")
+    
+    def visit_varsNode(self, node):
+        return node.name

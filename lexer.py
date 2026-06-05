@@ -22,8 +22,14 @@ class Lexer:
             self.pos += 1
             return Token(TokenType.SYMBOL, char)
         if char in OPERATORS:
+            firstChar = char
             self.pos += 1
-            return Token(TokenType.OPERATOR, char)
+            if self.source[self.pos] == '/':
+                firstChar += self.source[self.pos]
+                self.pos += 1
+                firstChar += self.source[self.pos]
+                self.pos += 1
+            return Token(TokenType.OPERATOR, firstChar)
         if char == '"':
             self.pos += 1
             start = self.pos

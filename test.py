@@ -1,5 +1,5 @@
 test_plang_code = """
-using.tips("PLang 编译器测试");
+
 vars.new(i, number, 1);
 vars.new(pi, dotNum, 3.14);
 loop.while.when(>/=(vars.i, 8)).codes({
@@ -20,6 +20,7 @@ lexer = Lexer(test_plang_code)
 tokens = lexer.scan_all()
 parser = Parser(tokens)
 ast = parser.parseProgram()
+print(ast)
 compiler = compile()
 c_code = compiler.visit(ast)
 print(c_code)

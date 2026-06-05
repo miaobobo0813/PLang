@@ -8,7 +8,7 @@ class Parser:
         self.currentModifyTarget = None
     
     def nowToken(self):
-        if self.pos < len(self.tokens):
+        if self.pos <= len(self.tokens):
             return self.tokens[self.pos]
         return Token(TokenType.EOF, "")
     
@@ -38,6 +38,9 @@ class Parser:
                 return self.parseUsing()
             else:
                 raise ValueError(f"Unexpected keyword: {token.value}")
+        elif token.type == TokenType.SYMBOL and token.value == ';':
+            self.nextToken()
+            return
         elif token.type == TokenType.SYMBOL:
             raise ValueError(f"Unexpected symbol: {token.value}")
         else:
@@ -58,6 +61,7 @@ class Parser:
             value = self.parseExpression()
             self.nextToken()  # Skip ')'
             self.nextToken()  # Skip ';'
+            self.nextToken()
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
             self.nextToken()  # Skip '.'
@@ -66,6 +70,7 @@ class Parser:
                 self.currentModifyTarget = modifier.value
                 self.nextToken()  # Skip '('
                 value = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
                 self.nextToken()  # Skip ')'
                 self.nextToken()  # Skip ';'
                 self.currentModifyTarget = None
@@ -79,8 +84,6 @@ class Parser:
             return numberNode(value=float(token.value))
         elif token.type == TokenType.TEXT:
             return textNode(value=token.value)
-        elif token.type == TokenType.MODIFIER:
-            return varsNode(name=token.value)
         elif token.type == TokenType.OPERATOR:
             return self.parseOperator()
         elif token.type == TokenType.KEYWORD and token.value == 'operators':
@@ -105,6 +108,7 @@ class Parser:
         self.nextToken()  # Skip operator
         self.nextToken()  # Skip '('
         left = self.parseExpression()
+        self.nextToken()  # Skip 'xxx'
         self.nextToken()  # Skip ','
         right = self.parseExpression()
         self.nextToken()  # Skip ')'
@@ -122,6 +126,7 @@ class Parser:
             if modifier1.value == 'when':
                 self.nextToken()  # Skip '('
                 condition = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
                 self.nextToken()  # Skip ')'
             elif modifier1.value == 'codes':
                 self.nextToken()  # Skip '('
@@ -268,6 +273,7 @@ class Parser:
         if modifier.value == 'otpt':
             self.nextToken()  # Skip '('
             value = self.parseExpression()
+            self.nextToken()  # Skip 'xxx'
             self.nextToken()  # Skip ')'
             self.nextToken()  # Skip ';'
             return terOtptNode(text=value)
@@ -282,7 +288,7 @@ class Parser:
             self.nextToken()  # Skip '('
             self.parseExpression()
             self.nextToken()  # Skip ')'
-            self.nextToken()  # Skip ';'
+            self.nextToken() # Skip ';'
             return None
         else:
             raise ValueError(f"Expected using modifier: {self.nowToken().value}. (use is in development...)")
