@@ -9,6 +9,7 @@ class TokenType(Enum):
     NUMBER = auto()
     TEXT = auto() 
     BOOLEAN = auto()
+    TYPE = auto()
     EOF = auto()  
 
 @dataclass
@@ -28,4 +29,7 @@ OPERATORS = {
 }
 SPECIAL_OPERATORS = {
     '</=', '>/='
+}
+TYPES = {
+    'number', 'dotNum', 'text', 'boolean'
 }

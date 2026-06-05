@@ -140,6 +140,7 @@ class Parser:
             if modifier2.value == 'when':
                 self.nextToken()  # Skip '('
                 condition = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
                 self.nextToken()  # Skip ')'
             elif modifier2.value == 'codes':
                 self.nextToken()  # Skip '('
@@ -169,8 +170,10 @@ class Parser:
             if modifier1.value == 'range':
                 self.nextToken() # Skip '('
                 rangeFrom = self.parseExpression()
+                self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 rangeTo = self.parseExpression()
+                self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 if self.nowToken().value != 'vars':
                     raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
@@ -180,15 +183,16 @@ class Parser:
                 if type.value == 'new':
                     self.nextToken() # Skip 'new'
                     self.nextToken() # Skip '('
-                    varName = self.nowToken()
-                    self.nextToken() # Skip variable name
+                    varName = self.nextToken()
+                    self.nextToken() # Skip ','
                     varType = self.nextToken()
                     self.nextToken() # Skip ','
                     value = self.parseExpression()
+                    self.nextToken() # Skip 'xxx'
                     self.nextToken() # Skip ')'
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
-                    varName = self.nowToken()
+                    varName = self.nextToken()
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken() # Skip ')'
             elif modifier1.value == 'codes':
@@ -202,12 +206,14 @@ class Parser:
                 raise ValueError(f"Expected loop modifier: {self.nowToken().value}.")
             
             self.nextToken() # Skip '.'
-            modifier1 = self.nextToken()
-            if modifier1.value == 'range':
+            modifier2 = self.nextToken()
+            if modifier2.value == 'range':
                 self.nextToken() # Skip '('
                 rangeFrom = self.parseExpression()
+                self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 rangeTo = self.parseExpression()
+                self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 if self.nowToken().value != 'vars':
                     raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
@@ -217,18 +223,19 @@ class Parser:
                 if type.value == 'new':
                     self.nextToken() # Skip 'new'
                     self.nextToken() # Skip '('
-                    varName = self.nowToken()
-                    self.nextToken() # Skip variable name
+                    varName = self.nextToken()
+                    self.nextToken() # Skip ','
                     varType = self.nextToken()
                     self.nextToken() # Skip ','
                     value = self.parseExpression()
+                    self.nextToken() # Skip 'xxx'
                     self.nextToken() # Skip ')'
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
-                    varName = self.nowToken()
+                    varName = self.nextToken()
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken() # Skip ')'
-            elif modifier1.value == 'codes':
+            elif modifier2.value == 'codes':
                 self.nextToken() # Skip '('
                 self.nextToken() # Skip '{'
                 while self.nowToken().value != '}':

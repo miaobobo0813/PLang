@@ -45,6 +45,8 @@ class Lexer:
             value = self.source[start:self.pos]
             if value in KEYWORDS:
                 return Token(TokenType.KEYWORD, value)
+            elif value in TYPES:
+                return Token(TokenType.TYPE, value)
             else:
                 return Token(TokenType.MODIFIER, value)
 
