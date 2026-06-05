@@ -89,3 +89,6 @@ class compile:
     
     def visit_varsNode(self, node):
         return node.name
+
+    def visit_tipNode(self, node):
+        return 

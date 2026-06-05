@@ -64,3 +64,7 @@ class loopNode:
 @dataclass
 class programNode:
     statements: List[Any]
+
+@dataclass
+class tipNode:
+    text: Any

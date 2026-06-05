@@ -1,5 +1,5 @@
 test_plang_code = """
-
+using.tips("This is a comment and not be compile.");
 vars.new(i, number, 1);
 vars.new(pi, dotNum, 3.14);
 loop.while.when(>/=(vars.i, 8)).codes({

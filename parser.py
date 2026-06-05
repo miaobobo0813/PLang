@@ -38,11 +38,8 @@ class Parser:
                 return self.parseUsing()
             else:
                 raise ValueError(f"Unexpected keyword: {token.value}")
-        elif token.type == TokenType.SYMBOL and token.value == ';':
-            self.nextToken()
-            return
         elif token.type == TokenType.SYMBOL:
-            raise ValueError(f"Unexpected symbol: {token.value}")
+            raise ValueError(f"Unexpected symbol: {token.value}. (No extra ; allow)")
         else:
             raise ValueError(f"Unexpected keyword: {token.value}")
     
@@ -286,9 +283,10 @@ class Parser:
         modifier = self.nextToken()
         if modifier.value == 'tips':
             self.nextToken()  # Skip '('
-            self.parseExpression()
+            text = self.parseExpression()
+            self.nextToken()  # Skip 'xxx'
             self.nextToken()  # Skip ')'
-            self.nextToken() # Skip ';'
-            return None
+            self.nextToken()  # Skip ';'
+            return tipNode(text=text)
         else:
             raise ValueError(f"Expected using modifier: {self.nowToken().value}. (use is in development...)")
