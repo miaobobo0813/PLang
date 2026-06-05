@@ -1,6 +1,2 @@
 *__pycache__/
 __main__.exe
-__pycache__/compile.cpython-314.pyc
-__pycache__/lexer.cpython-314.pyc
-__pycache__/parser.cpython-314.pyc
-__pycache__/tokens.cpython-314.pyc

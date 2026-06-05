@@ -110,7 +110,6 @@ class compile:
             elif self.varsTypeMap[text] == 'dotNum':
                 printfCode = '%.16g'
             self.addCode(f'printf(\"{printfCode}\", {text});')
-
     
     def visit_varsNode(self, node):
         return node.name
