@@ -86,9 +86,12 @@ class compile:
         toNum = self.visit(node.rangeTo)
         rangeVar = f"{type} {node.var.name} = {fromNum}"
         self.addCode(f"for ({rangeVar}; {node.var.name} <= {toNum}; {node.var.name}++){{")
+        if node.var.newType != '':
+            self.varsTypeMap[node.var.name] = node.var.newType
         for code in node.body:
             self.visit(code)
         self.addCode('}')
+        del self.varsTypeMap[node.var.name]
     
     def visit_terOtptNode(self, node):
         text = self.visit(node.text)

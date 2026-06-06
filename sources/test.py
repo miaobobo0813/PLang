@@ -2,7 +2,7 @@ test_plang_code = """
 using.tips("This is a comment and not be compile.");
 vars.new(i, number, 1);
 vars.new(pi, dotNum, 3.1415926);
-loop.for.range(1, 8, vars.i).codes({
+loop.for.range(1, 8, vars.new(j, number, 1)).codes({
     ter.otpt("当前 i 的值是：");
     using.tips("vars.i.modify(*(var, 2));");
     ter.otpt(vars.i);

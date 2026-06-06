@@ -2,13 +2,12 @@ from lexer import Lexer
 from parser import Parser
 from compile import compile
 from pathlib import Path
+from __init__ import __version__
 import subprocess
 import os
 import sys
 import tempfile
 import argparse
-
-VERSION = 1.0
 
 def compiler(inputFile, outputFile=None, verbose=None, run=False):
     if sys.platform != 'win32':
@@ -69,19 +68,12 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
         return False
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=f"PLang Compiler {VERSION}",
-        formatter_class=argparse.RawDescriptionHelpFormatter, 
-        epilog="""
-Usage:
-plang <filename> [options] <value>
-""" 
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument('file', nargs='?', help='Path to your source code.')
     parser.add_argument('-o', '--output', help='')
-    parser.add_argument('-v', '--verbose', help='Show more details about the compile.')
-    parser.add_argument('-r', '--run', help='Run the .exe after compile.')
-    parser.add_argument('--version', action='version', version=f'PLang Compiler {VERSION}')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Show more details about the compile.')
+    parser.add_argument('-r', '--run', action='store_true', help='Run the .exe after compile.')
+    parser.add_argument('--version', action='version', version=f'PLang Compiler {__version__}')
 
     args = parser.parse_args()
 
@@ -93,3 +85,6 @@ plang <filename> [options] <value>
         print(f'Error: {args.file} do not exists. Check the spell and try again.')
 
     return compiler(args.file, args.output, verbose=args.verbose, run=args.run)
+
+if __name__ == "__main__":
+    sys.exit(main())
