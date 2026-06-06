@@ -116,3 +116,11 @@ e.g. `vars.new(i, number, 0)`
 2. `dotNum`: a decimal number (float/double).
 3. `text`: a text (string).
 4. `boolean`: a bool value. it has 2 values: `yes` and `no`.
+
+---
+### PLang compiler
+
+##### Dependencies
+
+1. `gcc`: We need it to compile c code.
+2. `python`: Compiler write by python.
