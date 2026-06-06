@@ -1,8 +1,8 @@
-from lexer import Lexer
-from parser import Parser
-from compile import compile
+from .lexer import Lexer
+from .parser import Parser
+from .compile import compile
 from pathlib import Path
-from __init__ import __version__
+from .__init__ import __version__
 import subprocess
 import os
 import sys
@@ -17,7 +17,7 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
         with open(inputFile, 'r', encoding='utf-8') as f:
             codes = f.read()
     except FileNotFoundError:
-        print(f'Error: file \"{inputFile}\" do not exists.')
+        print(f'Error: file \"{inputFile}\" do not exist.')
         return False
     except Exception as e:
         print(f'Error: {e}')
