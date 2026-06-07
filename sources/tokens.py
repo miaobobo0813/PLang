@@ -33,3 +33,6 @@ SPECIAL_OPERATORS = {
 TYPES = {
     'number', 'dotNum', 'text', 'boolean'
 }
+BOOLEANS = {
+    'yes', 'no'
+}

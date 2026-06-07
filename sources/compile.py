@@ -35,7 +35,7 @@ class compile:
         raise ValueError(f"No visit method found for node type: {type(node).__name__}")
     
     def visit_programNode(self, node):
-        self.addCode("#ifdef _WIN32\n#include <windows.h>\n#endif\n#include <stdio.h>\n#include <string.h>\nint main() { \n #ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
+        self.addCode("#ifdef _WIN32\n#include <windows.h>\n#endif\n#include <stdio.h>\n#include <string.h>\n#include <stdbool.h>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
         for statement in node.statements:
             self.visit(statement)
         self.addCode("return 0; }")
@@ -56,10 +56,7 @@ class compile:
         cType = self.typeFormat.get(node.type, 'int')
         valueCode = self.visit(node.value)
         self.varsTypeMap[node.name] = node.type
-        if cType == 'char*':
-            self.addCode(f'{cType} {node.name}[] = {valueCode};')
-        else:
-            self.addCode(f"{cType} {node.name} = {valueCode};")
+        self.addCode(f"{cType} {node.name} = {valueCode};")
     
     def visit_varsModifyNode(self, node):
         valueCode = self.visit(node.value)

@@ -14,6 +14,7 @@ vars.pi.modify(+(var, 1));
 ter.otpt("\\n");
 ter.otpt(vars.pi);
 ter.otpt("\\n");
+vars.new(bool, boolean, yes);
 ter.otpt("测试结束！");
 """
 

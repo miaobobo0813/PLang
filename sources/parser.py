@@ -48,7 +48,7 @@ class Parser:
         self.nextToken()  # Skip '.'
         modifier = self.nextToken()
         if modifier.type != TokenType.MODIFIER:
-            raise ValueError(f"Expected modifier \"{modifier.value}\"")
+            raise ValueError(f"Unexpected modifier \"{modifier.value}\"")
         if modifier.value == 'new':
             self.nextToken()  # Skip '('
             name = self.nextToken()
@@ -81,6 +81,8 @@ class Parser:
             return numberNode(value=float(token.value))
         elif token.type == TokenType.TEXT:
             return textNode(value=token.value)
+        elif token.type == TokenType.BOOLEAN:
+            return booleanNode(value=token.value=='yes')
         elif token.type == TokenType.OPERATOR:
             return self.parseOperator()
         elif token.type == TokenType.KEYWORD and token.value == 'operators':

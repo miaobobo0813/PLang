@@ -68,7 +68,7 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
         return False
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="plang")
     parser.add_argument('file', nargs='?', help='Path to your source code.')
     parser.add_argument('-o', '--output', help='')
     parser.add_argument('-v', '--verbose', action='store_true', help='Show more details about the compile.')

@@ -47,6 +47,8 @@ class Lexer:
                 return Token(TokenType.KEYWORD, value)
             elif value in TYPES:
                 return Token(TokenType.TYPE, value)
+            elif value in BOOLEANS:
+                return Token(TokenType.BOOLEAN, value)
             else:
                 return Token(TokenType.MODIFIER, value)
 
