@@ -37,18 +37,18 @@ class Parser:
             elif token.value == 'using':
                 return self.parseUsing()
             else:
-                raise ValueError(f"Unexpected keyword: {token.value}")
+                raise ValueError(f"Unknown keyword: {token.value}")
         elif token.type == TokenType.SYMBOL:
-            raise ValueError(f"Unexpected symbol: {token.value}. (No extra ; allow)")
+            raise ValueError(f"Unexpected symbol: {token.value} (No extra ; allow)")
         else:
-            raise ValueError(f"Unexpected keyword: {token.value}")
+            raise ValueError(f"Unknown keyword: {token.value}")
     
     def parseVars(self):
         self.nextToken()  # Skip 'vars'
         self.nextToken()  # Skip '.'
         modifier = self.nextToken()
         if modifier.type != TokenType.MODIFIER:
-            raise ValueError(f"Unexpected modifier \"{modifier.value}\"")
+            raise ValueError(f"Unknown modifier \"{modifier.value}\"")
         if modifier.value == 'new':
             self.nextToken()  # Skip '('
             name = self.nextToken()
@@ -73,7 +73,7 @@ class Parser:
                 self.currentModifyTarget = None
                 return varsModifyNode(name=modifier.value, value=value)
             else:
-                raise SyntaxError("Need modify.")
+                raise SyntaxError(f"Unknown modifier: {check.value}")
     
     def parseExpression(self):
         token = self.nowToken()
@@ -95,15 +95,15 @@ class Parser:
             return varsNode(name=self.nowToken().value)
         elif token.value == 'var':
             if self.currentModifyTarget is None:
-                raise ValueError("Unexpected 'var' without modifying a variable.")
+                raise ValueError("Unexpected 'var' without modifying a variable")
             return varsNode(name=self.currentModifyTarget)
         else:
-            raise ValueError(f"Unexpected token in expression: {token.value}")
+            raise ValueError(f"Unknown expression: {token.value}")
     
     def parseOperator(self):
         operator = self.nowToken()
         if operator.type != TokenType.OPERATOR:
-            raise ValueError(f"Expected operator, got: {operator.value}")
+            raise ValueError(f"Unknown operator: {operator.value}")
         self.nextToken()  # Skip operator
         self.nextToken()  # Skip '('
         left = self.parseExpression()
@@ -135,7 +135,7 @@ class Parser:
                 self.nextToken()  # Skip '}'
                 self.nextToken()  # Skip ')'
             else:
-                raise ValueError(f"Expected loop modifier: {self.nowToken().value}.")
+                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
             
             self.nextToken()  # Skip '.'
             modifier2 = self.nextToken()
@@ -152,7 +152,7 @@ class Parser:
                 self.nextToken()  # Skip '}'
                 self.nextToken()  # Skip ')'
             else:
-                raise ValueError(f"Expected loop modifier: {self.nowToken().value}.")
+                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
             
             if condition is None:
                 raise ValueError("Missing condition for while loop")
@@ -178,7 +178,7 @@ class Parser:
                 self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 if self.nowToken().value != 'vars':
-                    raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
+                    raise ValueError(f"Missing variable for for loop: {self.nowToken().value}")
                 self.nextToken() # Skip 'vars'
                 self.nextToken() # Skip '.'
                 type = self.nowToken()
@@ -205,7 +205,7 @@ class Parser:
                 self.nextToken() # Skip '}'
                 self.nextToken() # Skip ')'
             else:
-                raise ValueError(f"Expected loop modifier: {self.nowToken().value}.")
+                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}.")
             
             self.nextToken() # Skip '.'
             modifier2 = self.nextToken()
@@ -218,7 +218,7 @@ class Parser:
                 self.nextToken() # Skip 'xxx'
                 self.nextToken() # Skip ','
                 if self.nowToken().value != 'vars':
-                    raise ValueError(f"Expected variable for for loop: {self.nowToken().value}")
+                    raise ValueError(f"Missing variable for for loop: {self.nowToken().value}")
                 self.nextToken() # Skip 'vars'
                 self.nextToken() # Skip '.'
                 type = self.nowToken()
@@ -245,7 +245,7 @@ class Parser:
                 self.nextToken() # Skip '}'
                 self.nextToken() # Skip ')'
             else:
-                raise ValueError(f"Expected loop modifier: {self.nowToken().value}.")
+                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}.")
 
             if var is None:
                 raise ValueError("Missing variable for for loop")
@@ -269,8 +269,92 @@ class Parser:
             self.nextToken() # Skip ')'
             self.nextToken() # Skip ';'
             return loopNode(stop=False, skip=True)
+        elif modifier.value == 'if':
+            condition = None
+            statements = []
+            elseStatements = []
+            self.nextToken() # Skip '.'
+            modifier1 = self.nextToken()
+            if modifier1.value == 'when':
+                self.nextToken()  # Skip '('
+                condition = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
+                self.nextToken()  # Skip ')'
+            elif modifier1.value == 'codes':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    statements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            elif modifier1.value == 'else':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    elseStatements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            else:
+                raise ValueError(f"Unknown loop modifier: {modifier1.value}")
+
+            self.nextToken() # Skip '.'
+            modifier2 = self.nextToken()
+            if modifier2.value == 'when':
+                self.nextToken()  # Skip '('
+                condition = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
+                self.nextToken()  # Skip ')'
+            elif modifier2.value == 'codes':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    statements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            elif modifier2.value == 'else':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    elseStatements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            else:
+                raise ValueError(f"Unknown loop modifier: {modifier2.value}")
+
+            self.nextToken() # Skip '.'
+            modifier3 = self.nextToken()
+            if modifier3.value == 'when':
+                self.nextToken()  # Skip '('
+                condition = self.parseExpression()
+                self.nextToken()  # Skip 'xxx'
+                self.nextToken()  # Skip ')'
+            elif modifier3.value == 'codes':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    statements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            elif modifier3.value == 'else':
+                self.nextToken()  # Skip '('
+                self.nextToken()  # Skip '{'
+                while self.nowToken().value != '}':
+                    elseStatements.append(self.parseStatement())
+                self.nextToken()  # Skip '}'
+                self.nextToken()  # Skip ')'
+            else:
+                raise ValueError(f"Unknown loop modifier: {modifier3.value}")
+
+            self.nextToken()  # Skip ';'
+
+            if condition is None:
+                raise ValueError("Missing condition for if loop.")
+            if statements == []:
+                raise ValueError("Missing body for if loop.")
+
+            return loopIfNode(condition=condition, body=statements,elseBody=elseStatements)
         else:
-            raise ValueError(f"Expected loop modifier: {self.nowToken().value}. ('if' is developing...)")
+            raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
     
     def parseTerminal(self):
         self.nextToken()  # Skip 'ter'
@@ -283,8 +367,16 @@ class Parser:
             self.nextToken()  # Skip ')'
             self.nextToken()  # Skip ';'
             return terOtptNode(text=value)
+        elif modifier.value == 'inpt':
+            self.nextToken()  # Skip '('
+            self.nextToken()  # Skip 'vars'
+            self.nextToken()  # Skip '.'
+            value = self.nextToken()
+            self.nextToken()  # Skip ')'
+            self.nextToken()  # Skip ';'
+            return terInptNode(var=value.value)
         else:
-            raise ValueError(f"Expected terminal modifier: {self.nowToken().value}. (inpt is in development...)")
+            raise ValueError(f"Unknown terminal modifier: {self.nowToken().value}.")
     
     def parseUsing(self):
         self.nextToken()  # Skip 'using'
@@ -298,4 +390,4 @@ class Parser:
             self.nextToken()  # Skip ';'
             return tipNode(text=text)
         else:
-            raise ValueError(f"Expected using modifier: {self.nowToken().value}. (use is in development...)")
+            raise ValueError(f"Unknown using modifier: {self.nowToken().value}. (use is in development...)")

@@ -32,7 +32,7 @@ class compile:
         methodName = f'visit_{type(node).__name__}'
         if hasattr(self, methodName):
             return getattr(self, methodName)(node)
-        raise ValueError(f"No visit method found for node type: {type(node).__name__}")
+        raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}.")
     
     def visit_programNode(self, node):
         self.addCode("#ifdef _WIN32\n#include <windows.h>\n#endif\n#include <stdio.h>\n#include <string.h>\n#include <stdbool.h>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
@@ -89,6 +89,18 @@ class compile:
             self.visit(code)
         self.addCode('}')
         del self.varsTypeMap[node.var.name]
+
+    def visit_loopIfNode(self, node):
+        condition = self.visit(node.condition)
+        self.addCode(f"if({condition}) {{")
+        for code in node.body:
+            self.visit(code)
+        self.addCode('}')
+        if node.elseBody != []:
+            self.addCode(' else {')
+            for code in node.elseBody:
+                self.visit(code)
+            self.addCode('}')
     
     def visit_terOtptNode(self, node):
         text = self.visit(node.text)
@@ -122,3 +134,14 @@ class compile:
             self.addCode('break;')
         elif node.skip:
             self.addCode('continue;')
+
+    def visit_terInptNode(self, node):
+        text = node.var
+        scanfCode = None
+        if self.varsTypeMap[text] == 'number' or self.varsTypeMap[text] == 'boolean':
+            scanfCode = '%d'
+        elif self.varsTypeMap[text] == 'text':
+            scanfCode = '%s'
+        elif self.varsTypeMap[text] == 'dotNum':
+            scanfCode = '%lf'
+        self.addCode(f'scanf(\"{scanfCode}\", &{text});')
