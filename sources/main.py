@@ -51,11 +51,11 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
             print("C Code:")
             print(cCode)
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False) as f:
             f.write(cCode)
             cFile = f.name
 
-        cmd = ['gcc', cFile, '-o', exeFile]
+        cmd = ['g++', cFile, '-o', exeFile]
         result = subprocess.run(cmd, capture_output=True, text=True)
         os.remove(cFile)
 

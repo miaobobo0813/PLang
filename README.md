@@ -49,11 +49,11 @@ e.g. `vars.new(i, number, 0)`
       vars.n.modify(+(var, 1));
   });
   ```
-- `for`: run the code while the variable is in the specified range. use `.range(from: number, to: number, in: variable)` to write a range.
+- `for`: run the code while the variable is in the specified range. use `.range(number, number, variable)` to write a range.
     e.g.
   ```PLang
   vars.new(i, number, 0);
-  loop.for.range(from: 1, to: 5, in: vars.i).codes({
+  loop.for.range(1, 5, vars.i).codes({
       ter.otpt(vars.i);
   });
   ```
@@ -130,5 +130,5 @@ e.g. `vars.new(i, number, 0)`
 
 ##### Dependencies
 
-1. `gcc`: We need it to compile c code.
+1. `g++`: We need it to compile C++ code.
 2. `python`: Compiler write by python.

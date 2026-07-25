@@ -3,7 +3,7 @@ class compile:
         self.compileCodes = []
         self.typeFormat = {
             'number': 'int',
-            'text': 'char*',
+            'text': 'std::string',
             'boolean': 'bool', 
             'dotNum': 'double', 
             '': '', 
@@ -23,7 +23,6 @@ class compile:
             '>': '>', 
             '<': '<', 
         }
-        self.varsTypeMap = {}
         self.errors = []
 
     def addCode(self, code):
@@ -36,7 +35,7 @@ class compile:
         raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}.")
     
     def visit_programNode(self, node):
-        self.addCode("#ifdef _WIN32\n#include <windows.h>\n#endif\n#include <stdio.h>\n#include <string.h>\n#include <stdbool.h>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
+        self.addCode("#ifdef _WIN32\n#include<windows.h>\n#endif\n#include<iostream>\n#include<string>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
         for statement in node.statements:
             self.visit(statement)
         self.addCode("return 0; }")
@@ -56,7 +55,6 @@ class compile:
     def visit_varsNewNode(self, node):
         cType = self.typeFormat.get(node.type, 'int')
         valueCode = self.visit(node.value)
-        self.varsTypeMap[node.name] = node.type
         self.addCode(f"{cType} {node.name} = {valueCode};")
     
     def visit_varsModifyNode(self, node):
@@ -84,12 +82,9 @@ class compile:
         toNum = self.visit(node.rangeTo)
         rangeVar = f"{type} {node.var.name} = {fromNum}"
         self.addCode(f"for ({rangeVar}; {node.var.name} <= {toNum}; {node.var.name}++){{")
-        if node.var.newType != '':
-            self.varsTypeMap[node.var.name] = node.var.newType
         for code in node.body:
             self.visit(code)
         self.addCode('}')
-        del self.varsTypeMap[node.var.name]
 
     def visit_loopIfNode(self, node):
         condition = self.visit(node.condition)
@@ -105,24 +100,7 @@ class compile:
     
     def visit_terOtptNode(self, node):
         text = self.visit(node.text)
-        if text.startswith('"'):
-            self.addCode(f'printf({text});')
-        elif text in ['true', 'false']:
-            self.addCode(f"printf(\"%d\", {text});")
-        elif text.replace('.', '').isdigit() or (text.startswith('-') and text[1:].replace('.', '').isdigit()):
-            if '.' in text:
-                self.addCode(f'printf(\"%.16g\", {text});')
-            else:
-                self.addCode(f'printf(\"%d\", {text});')
-        else:
-            printfCode = None
-            if self.varsTypeMap[text] == 'number' or self.varsTypeMap[text] == 'boolean':
-                printfCode = '%d'
-            elif self.varsTypeMap[text] == 'text':
-                printfCode = '%s'
-            elif self.varsTypeMap[text] == 'dotNum':
-                printfCode = '%.16g'
-            self.addCode(f'printf(\"{printfCode}\", {text});')
+        self.addCode(f"std::cout<<{text};")
     
     def visit_varsNode(self, node):
         return node.name
@@ -138,11 +116,4 @@ class compile:
 
     def visit_terInptNode(self, node):
         text = node.var
-        scanfCode = None
-        if self.varsTypeMap[text] == 'number' or self.varsTypeMap[text] == 'boolean':
-            scanfCode = '%d'
-        elif self.varsTypeMap[text] == 'text':
-            scanfCode = '%s'
-        elif self.varsTypeMap[text] == 'dotNum':
-            scanfCode = '%lf'
-        self.addCode(f'scanf(\"{scanfCode}\", &{text});')
+        self.addCode(f"std::cin>>{text};")
