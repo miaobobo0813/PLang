@@ -11,11 +11,14 @@ class TokenType(Enum):
     BOOLEAN = auto()
     TYPE = auto()
     EOF = auto()  
+    UNKNOWN = auto()
 
 @dataclass
 class Token:
     type: TokenType
     value: str
+    fromPos: tuple[int, int]
+    toPos: tuple[int, int]
     def __repr__(self):
         return f"Token({self.type.name}, '{self.value}')"
     

@@ -12,16 +12,16 @@ import argparse
 def compiler(inputFile, outputFile=None, verbose=None, run=False):
     if sys.platform != 'win32':
         print('Error: PLang only support for Windows.')
-        return False
+        return 1
     try:
         with open(inputFile, 'r', encoding='utf-8') as f:
             codes = f.read()
     except FileNotFoundError:
         print(f'Error: file \"{inputFile}\" do not exist.')
-        return False
+        return 1
     except Exception as e:
         print(f'Error: {e}')
-        return False
+        return -1
 
     if outputFile:
         exeFile = outputFile
@@ -31,8 +31,16 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
     try:
         lexer = Lexer(codes)
         tokens = lexer.scan_all()
+        if lexer.errors != []:
+            for error in lexer.errors:
+                print(error)
+            return 1
         parser = Parser(tokens)
         ast = parser.parseProgram()
+        if parser.errors != []:
+            for error in parser.errors:
+                print(error)
+            return 1
         if verbose:
             print("AST Tree:")
             print(ast)
@@ -52,9 +60,10 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
         os.remove(cFile)
 
         if result.returncode != 0:
-            print("Logic error:")
             print(result.stderr)
-            return False
+            return 1
+
+        print("Build success!")
 
         if run:
             result = subprocess.run([exeFile], capture_output=True, text=True)
@@ -62,10 +71,13 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
             if result.stderr:
                 print(result.stderr, file=sys.stderr)
 
-        return True
+        return 0
+    except KeyError as e:
+        print(f"Unknown variable {e}")
+        return 1
     except Exception as e:
-        print(f"Error: {e}")
-        return False
+        print(e)
+        return 1
 
 def main():
     parser = argparse.ArgumentParser(prog="plang")

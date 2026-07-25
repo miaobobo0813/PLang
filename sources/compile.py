@@ -24,6 +24,7 @@ class compile:
             '<': '<', 
         }
         self.varsTypeMap = {}
+        self.errors = []
 
     def addCode(self, code):
         self.compileCodes.append(code)

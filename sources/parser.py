@@ -1,23 +1,34 @@
 from .tokens import *
 from .nodes import *
+from typing import Optional
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
         self.currentModifyTarget = None
+        self.errors = []
     
     def nowToken(self):
-        if self.pos <= len(self.tokens):
+        if self.pos < len(self.tokens):
             return self.tokens[self.pos]
-        return Token(TokenType.EOF, "")
+        token = self.tokens[len(self.tokens)-1]
+        return Token(TokenType.EOF, "", fromPos=token.fromPos, toPos=token.toPos)
     
-    def nextToken(self):
+    def nextToken(self, needs: Optional[str] = None, message: Optional[str] = None):
         if self.pos < len(self.tokens):
             token = self.tokens[self.pos]
+            if needs != None:
+                if token.value != needs:
+                    if message != None:
+                        self.errors.append(f"Line {token.fromPos[0]}, Column {token.fromPos[1]}: {message}")
+                    else:
+                        self.errors.append(f"Line {token.fromPos[0]}, Column {token.fromPos[1]}: Missing {needs}")
+                    return token
             self.pos += 1
             return token
-        return Token(TokenType.EOF, "")
+        token = self.tokens[len(self.tokens)-1]
+        return Token(TokenType.EOF, "", fromPos=token.fromPos, toPos=token.toPos)
     
     def parseProgram(self):
         statement = []
@@ -37,129 +48,128 @@ class Parser:
             elif token.value == 'using':
                 return self.parseUsing()
             else:
-                raise ValueError(f"Unknown keyword: {token.value}")
+                self.errors.append(f"Line: {token.fromPos[0]}, Column: {token.fromPos[1]}: Unknown keyword: {token.value}")
         elif token.type == TokenType.SYMBOL:
-            raise ValueError(f"Unexpected symbol: {token.value} (No extra ; allow)")
+            self.errors.append(f"Line: {token.fromPos[0]}, Column: {token.fromPos[1]}: Unexpected symbol: {token.value} (No extra ; allow)")
         else:
-            raise ValueError(f"Unknown keyword: {token.value}")
+            self.errors.append(f"Line: {token.fromPos[0]}, Column: {token.fromPos[1]}: Unknown keyword: {token.value}")
     
     def parseVars(self):
-        self.nextToken()  # Skip 'vars'
-        self.nextToken()  # Skip '.'
+        self.nextToken('vars', "Missing 'vars' keyword")
+        self.nextToken('.', "Missing '.' between keyword and modifier")
         modifier = self.nextToken()
         if modifier.type != TokenType.MODIFIER:
-            raise ValueError(f"Unknown modifier \"{modifier.value}\"")
+            self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Unknown modifier \"{modifier.value}\"")
         if modifier.value == 'new':
-            self.nextToken()  # Skip '('
+            self.nextToken('(', "Missing '(' after modifier")
             name = self.nextToken()
-            self.nextToken()  # Skip ','
+            self.nextToken(',', "Missing ',' between args")
             typeToken = self.nextToken()
-            self.nextToken()  # Skip ','
+            self.nextToken(',', "Missing ',' between args")
             value = self.parseExpression()
-            self.nextToken()  # Skip ')'
-            self.nextToken()  # Skip ';'
-            self.nextToken()
+            self.nextToken(')', "Missing ')' after args")
+            self.nextToken(';', "Missing ';' after vars statement")
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
-            self.nextToken()  # Skip '.'
+            self.nextToken('.', "Missing '.' between modifiers")
             check = self.nextToken()
             if check.value == 'modify':
                 self.currentModifyTarget = modifier.value
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after modifier")
                 value = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
-                self.nextToken()  # Skip ';'
+                self.nextToken(')', "Missing ')' after args")
+                self.nextToken(';', "Missing ';' after vars statement")
                 self.currentModifyTarget = None
                 return varsModifyNode(name=modifier.value, value=value)
             else:
-                raise SyntaxError(f"Unknown modifier: {check.value}")
+                self.errors.append(f"Line: {check.fromPos[0]}, Column: {check.fromPos[1]}: Unknown modifier: {check.value}")
     
     def parseExpression(self):
         token = self.nowToken()
         if token.type == TokenType.NUMBER:
+            self.nextToken()
             return numberNode(value=float(token.value))
         elif token.type == TokenType.TEXT:
+            self.nextToken()
             return textNode(value=token.value)
         elif token.type == TokenType.BOOLEAN:
+            self.nextToken()
             return booleanNode(value=token.value=='yes')
         elif token.type == TokenType.OPERATOR:
             return self.parseOperator()
         elif token.type == TokenType.KEYWORD and token.value == 'operators':
-            self.nextToken()  # Skip 'operators'
-            self.nextToken()  # Skip '.'
+            self.nextToken()
+            self.nextToken('.', "Missing '.' between keyword and modifier")
             return self.parseOperator()
         elif token.type == TokenType.KEYWORD and token.value == 'vars':
-            self.nextToken()  # Skip 'vars'
-            self.nextToken()  # Skip '.'
-            return varsNode(name=self.nowToken().value)
+            self.nextToken()
+            self.nextToken('.', "Missing '.' between keyword and modifier")
+            return varsNode(name=self.nextToken().value)
         elif token.value == 'var':
+            self.nextToken()
             if self.currentModifyTarget is None:
-                raise ValueError("Unexpected 'var' without modifying a variable")
+                self.errors.append(f"Line: {token.fromPos[0]}, Column: {token.fromPos[1]}: Unexpected 'var' without modifying a variable")
+                return numberNode(value=0)
             return varsNode(name=self.currentModifyTarget)
         else:
-            raise ValueError(f"Unknown expression: {token.value}")
+            self.errors.append(f"Line: {token.fromPos[0]}, Column: {token.fromPos[1]}: Unknown expression: {token.value}")
     
     def parseOperator(self):
-        operator = self.nowToken()
+        operator = self.nextToken()
         if operator.type != TokenType.OPERATOR:
-            raise ValueError(f"Unknown operator: {operator.value}")
-        self.nextToken()  # Skip operator
-        self.nextToken()  # Skip '('
+            self.errors.append(f"Line: {operator.fromPos[0]}, Column: {operator.fromPos[1]}: Unknown operator: {operator.value}")
+        self.nextToken('(', "Missing '(' after operator")
         left = self.parseExpression()
-        self.nextToken()  # Skip 'xxx'
-        self.nextToken()  # Skip ','
+        self.nextToken(',', "Missing ',' between operator args")
         right = self.parseExpression()
-        self.nextToken()  # Skip ')'
+        self.nextToken(')', "Missing ')' after operator args")
         return opNode(operator=operator.value, left=left, right=right)
 
     def parseLoop(self):
-        self.nextToken()  # Skip 'loop'
-        self.nextToken()  # Skip '.'
+        self.nextToken('loop', "Missing 'loop' keyword")
+        self.nextToken('.', "Missing '.' between keyword and modifier")
         modifier = self.nextToken()
         if modifier.value == 'while':
             condition = None
             statements = []
-            self.nextToken()  # Skip '.'
+            self.nextToken('.', "Missing '.' after while modifier")
             modifier1 = self.nextToken()
             if modifier1.value == 'when':
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after modifier")
                 condition = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
+                self.nextToken(')', "Missing ')' after condition")
             elif modifier1.value == 'codes':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             else:
-                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
+                self.errors.append(f"Line: {modifier1.fromPos[0]}, Column: {modifier1.fromPos[1]}: Unknown loop modifier: {self.nowToken().value}")
             
-            self.nextToken()  # Skip '.'
+            self.nextToken('.', "Missing '.' between while modifiers")
             modifier2 = self.nextToken()
             if modifier2.value == 'when':
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after when modifier")
                 condition = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
+                self.nextToken(')', "Missing ')' after when condition")
             elif modifier2.value == 'codes':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             else:
-                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
+                self.errors.append(f"Line: {modifier2.fromPos[0]}, Column: {modifier2.fromPos[1]}: Unknown loop modifier: {self.nowToken().value}")
             
             if condition is None:
-                raise ValueError("Missing condition for while loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing condition for while loop")
             if not statements:
-                raise ValueError("Missing body for while loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing body for while loop")
 
-            self.nextToken() # Skip ';'
+            self.nextToken(';', "Missing ';' after while loop")
 
             return loopWhileNode(condition=condition, body=statements)
         elif modifier.value == 'for':
@@ -167,227 +177,217 @@ class Parser:
             statements = []
             rangeFrom = None
             rangeTo = None
-            self.nextToken() # Skip '.'
+            self.nextToken('.', "Missing '.' after for modifier")
             modifier1 = self.nextToken()
             if modifier1.value == 'range':
-                self.nextToken() # Skip '('
+                self.nextToken('(', "Missing '(' after range modifier")
                 rangeFrom = self.parseExpression()
-                self.nextToken() # Skip 'xxx'
-                self.nextToken() # Skip ','
+                self.nextToken(',', "Missing ',' between range values")
                 rangeTo = self.parseExpression()
-                self.nextToken() # Skip 'xxx'
-                self.nextToken() # Skip ','
+                self.nextToken(',', "Missing ',' between range value and variable")
                 if self.nowToken().value != 'vars':
-                    raise ValueError(f"Missing variable for for loop: {self.nowToken().value}")
-                self.nextToken() # Skip 'vars'
-                self.nextToken() # Skip '.'
+                    self.errors.append(f"Line: {modifier1.fromPos[0]}, Column: {modifier1.fromPos[1]}: Missing variable for for loop: {self.nowToken().value}")
+                self.nextToken('vars', "Missing 'vars' keyword in for loop range")
+                self.nextToken('.', "Missing '.' between vars and declaration")
                 type = self.nowToken()
                 if type.value == 'new':
-                    self.nextToken() # Skip 'new'
-                    self.nextToken() # Skip '('
+                    self.nextToken('new', "Missing 'new' modifier for variable declaration")
+                    self.nextToken('(', "Missing '(' after new modifier")
                     varName = self.nextToken()
-                    self.nextToken() # Skip ','
+                    self.nextToken(',', "Missing ',' between variable args")
                     varType = self.nextToken()
-                    self.nextToken() # Skip ','
+                    self.nextToken(',', "Missing ',' between variable args")
                     value = self.parseExpression()
-                    self.nextToken() # Skip 'xxx'
-                    self.nextToken() # Skip ')'
+                    self.nextToken(')', "Missing ')' after variable declaration")
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
-                self.nextToken() # Skip ')'
+                self.nextToken(')', "Missing ')' after range declaration")
             elif modifier1.value == 'codes':
-                self.nextToken() # Skip '('
-                self.nextToken() # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken() # Skip '}'
-                self.nextToken() # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             else:
-                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}.")
+                self.errors.append(f"Line: {modifier1.fromPos[0]}, Column: {modifier1.fromPos[1]}: Unknown loop modifier: {self.nowToken().value}.")
             
-            self.nextToken() # Skip '.'
+            self.nextToken('.', "Missing '.' between for modifiers")
             modifier2 = self.nextToken()
             if modifier2.value == 'range':
-                self.nextToken() # Skip '('
+                self.nextToken('(', "Missing '(' after range modifier")
                 rangeFrom = self.parseExpression()
-                self.nextToken() # Skip 'xxx'
-                self.nextToken() # Skip ','
+                self.nextToken(',', "Missing ',' between range values")
                 rangeTo = self.parseExpression()
-                self.nextToken() # Skip 'xxx'
-                self.nextToken() # Skip ','
+                self.nextToken(',', "Missing ',' between range value and variable")
                 if self.nowToken().value != 'vars':
-                    raise ValueError(f"Missing variable for for loop: {self.nowToken().value}")
-                self.nextToken() # Skip 'vars'
-                self.nextToken() # Skip '.'
+                    self.errors.append(f"Line: {modifier2.fromPos[0]}, Column: {modifier2.fromPos[1]}: Missing variable for for loop: {self.nowToken().value}")
+                self.nextToken('vars', "Missing 'vars' keyword in for loop range")
+                self.nextToken('.', "Missing '.' between vars and declaration")
                 type = self.nowToken()
                 if type.value == 'new':
-                    self.nextToken() # Skip 'new'
-                    self.nextToken() # Skip '('
+                    self.nextToken('new', "Missing 'new' modifier for variable declaration")
+                    self.nextToken('(', "Missing '(' after new modifier")
                     varName = self.nextToken()
-                    self.nextToken() # Skip ','
+                    self.nextToken(',', "Missing ',' between variable args")
                     varType = self.nextToken()
-                    self.nextToken() # Skip ','
+                    self.nextToken(',', "Missing ',' between variable args")
                     value = self.parseExpression()
-                    self.nextToken() # Skip 'xxx'
-                    self.nextToken() # Skip ')'
+                    self.nextToken(')', "Missing ')' after variable declaration")
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
-                self.nextToken() # Skip ')'
+                self.nextToken(')', "Missing ')' after range declaration")
             elif modifier2.value == 'codes':
-                self.nextToken() # Skip '('
-                self.nextToken() # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken() # Skip '}'
-                self.nextToken() # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             else:
-                raise ValueError(f"Unknown loop modifier: {self.nowToken().value}.")
+                self.errors.append(f"Line: {modifier2.fromPos[0]}, Column: {modifier2.fromPos[1]}: Unknown loop modifier: {self.nowToken().value}.")
 
             if var is None:
-                raise ValueError("Missing variable for for loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing variable for for loop")
+                var = forRangeVarNode(name="", value=None, newType='')
             if rangeFrom is None:
-                raise ValueError("Missing start value for for loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing start value for for loop")
             if rangeTo is None:
-                raise ValueError("Missing end value for for loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing end value for for loop")
             if statements == []:
-                raise ValueError("Missing body for for loop")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing body for for loop")
 
-            self.nextToken() # Skip ';'
+            self.nextToken(';', "Missing ';' after for loop")
 
             return loopForNode(var=var, rangeFrom=rangeFrom, rangeTo=rangeTo, body=statements)
         elif modifier.value == 'stop':
-            self.nextToken() # Skip '('
-            self.nextToken() # Skip ')'
-            self.nextToken() # Skip ';'
+            self.nextToken('(', "Missing '(' after stop modifier")
+            self.nextToken(')', "Missing ')' after stop modifier")
+            self.nextToken(';', "Missing ';' after stop loop")
             return loopNode(stop=True, skip=False)
         elif modifier.value == 'skip':
-            self.nextToken() # Skip '('
-            self.nextToken() # Skip ')'
-            self.nextToken() # Skip ';'
+            self.nextToken('(', "Missing '(' after skip modifier")
+            self.nextToken(')', "Missing ')' after skip modifier")
+            self.nextToken(';', "Missing ';' after skip loop")
             return loopNode(stop=False, skip=True)
         elif modifier.value == 'if':
             condition = None
             statements = []
             elseStatements = []
-            self.nextToken() # Skip '.'
+            self.nextToken('.', "Missing '.' after if modifier")
             modifier1 = self.nextToken()
             if modifier1.value == 'when':
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after when modifier")
                 condition = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
+                self.nextToken(')', "Missing ')' after when condition")
             elif modifier1.value == 'codes':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             elif modifier1.value == 'else':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after else modifier")
+                self.nextToken('{', "Missing '{' after else modifier")
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after else body")
+                self.nextToken(')', "Missing ')' after else body")
             else:
-                raise ValueError(f"Unknown loop modifier: {modifier1.value}")
+                self.errors.append(f"Line: {modifier1.fromPos[0]}, Column: {modifier1.fromPos[1]}: Unknown loop modifier: {modifier1.value}")
 
-            self.nextToken() # Skip '.'
+            self.nextToken('.', "Missing '.' between if modifiers")
             modifier2 = self.nextToken()
             if modifier2.value == 'when':
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after when modifier")
                 condition = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
+                self.nextToken(')', "Missing ')' after when condition")
             elif modifier2.value == 'codes':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             elif modifier2.value == 'else':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after else modifier")
+                self.nextToken('{', "Missing '{' after else modifier")
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after else body")
+                self.nextToken(')', "Missing ')' after else body")
             else:
-                raise ValueError(f"Unknown loop modifier: {modifier2.value}")
+                self.errors.append(f"Line: {modifier2.fromPos[0]}, Column: {modifier2.fromPos[1]}: Unknown loop modifier: {modifier2.value}")
 
-            self.nextToken() # Skip '.'
+            self.nextToken('.', "Missing '.' between if modifiers")
             modifier3 = self.nextToken()
             if modifier3.value == 'when':
-                self.nextToken()  # Skip '('
+                self.nextToken('(', "Missing '(' after when modifier")
                 condition = self.parseExpression()
-                self.nextToken()  # Skip 'xxx'
-                self.nextToken()  # Skip ')'
+                self.nextToken(')', "Missing ')' after when condition")
             elif modifier3.value == 'codes':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after codes modifier")
+                self.nextToken('{', "Missing '{' after codes modifier")
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after codes body")
+                self.nextToken(')', "Missing ')' after codes body")
             elif modifier3.value == 'else':
-                self.nextToken()  # Skip '('
-                self.nextToken()  # Skip '{'
+                self.nextToken('(', "Missing '(' after else modifier")
+                self.nextToken('{', "Missing '{' after else modifier")
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
-                self.nextToken()  # Skip '}'
-                self.nextToken()  # Skip ')'
+                self.nextToken('}', "Missing '}' after else body")
+                self.nextToken(')', "Missing ')' after else body")
             else:
-                raise ValueError(f"Unknown loop modifier: {modifier3.value}")
+                self.errors.append(f"Line: {modifier3.fromPos[0]}, Column: {modifier3.fromPos[1]}: Unknown loop modifier: {modifier3.value}")
 
-            self.nextToken()  # Skip ';'
+            self.nextToken(';', "Missing ';' after if loop")
 
             if condition is None:
-                raise ValueError("Missing condition for if loop.")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing condition for if loop.")
             if statements == []:
-                raise ValueError("Missing body for if loop.")
+                self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Missing body for if loop.")
 
             return loopIfNode(condition=condition, body=statements,elseBody=elseStatements)
         else:
-            raise ValueError(f"Unknown loop modifier: {self.nowToken().value}")
+            self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Unknown loop modifier: {self.nowToken().value}")
     
     def parseTerminal(self):
-        self.nextToken()  # Skip 'ter'
-        self.nextToken()  # Skip '.'
+        self.nextToken('ter', "Missing 'ter' keyword")
+        self.nextToken('.', "Missing '.' after ter keyword")
         modifier = self.nextToken()
         if modifier.value == 'otpt':
-            self.nextToken()  # Skip '('
+            self.nextToken('(', "Missing '(' after otpt modifier")
             value = self.parseExpression()
-            self.nextToken()  # Skip 'xxx'
-            self.nextToken()  # Skip ')'
-            self.nextToken()  # Skip ';'
+            self.nextToken(')', "Missing ')' after otpt expression")
+            self.nextToken(';', "Missing ';' after otpt statement")
             return terOtptNode(text=value)
         elif modifier.value == 'inpt':
-            self.nextToken()  # Skip '('
-            self.nextToken()  # Skip 'vars'
-            self.nextToken()  # Skip '.'
+            self.nextToken('(', "Missing '(' after inpt modifier")
+            self.nextToken('vars', "Missing 'vars' keyword in input statement")
+            self.nextToken('.', "Missing '.' after vars keyword")
             value = self.nextToken()
-            self.nextToken()  # Skip ')'
-            self.nextToken()  # Skip ';'
+            self.nextToken(')', "Missing ')' after inpt statement")
+            self.nextToken(';', "Missing ';' after inpt statement")
             return terInptNode(var=value.value)
         else:
-            raise ValueError(f"Unknown terminal modifier: {self.nowToken().value}.")
+            self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Unknown terminal modifier: {self.nowToken().value}.")
     
     def parseUsing(self):
-        self.nextToken()  # Skip 'using'
-        self.nextToken()  # Skip '.'
+        self.nextToken('using', "Missing 'using' keyword")
+        self.nextToken('.', "Missing '.' after using keyword")
         modifier = self.nextToken()
         if modifier.value == 'tips':
-            self.nextToken()  # Skip '('
+            self.nextToken('(', "Missing '(' after tips modifier")
             text = self.parseExpression()
-            self.nextToken()  # Skip 'xxx'
-            self.nextToken()  # Skip ')'
-            self.nextToken()  # Skip ';'
+            self.nextToken(')', "Missing ')' after tips expression")
+            self.nextToken(';', "Missing ';' after tips statement")
             return tipNode(text=text)
         else:
-            raise ValueError(f"Unknown using modifier: {self.nowToken().value}. (use is in development...)")
+            self.errors.append(f"Line: {modifier.fromPos[0]}, Column: {modifier.fromPos[1]}: Unknown using modifier: {self.nowToken().value}. (use is in development...)")

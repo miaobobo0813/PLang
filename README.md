@@ -17,8 +17,6 @@ e.g. `vars.new(i, number, 0)`
   e.g. `using.use(student);`
 - `tips(text)`: add a comment to the line.
   e.g. `using.tips("TODO: Here's something to do.");`
-- `sub(oldCode, newCode)`: replace `oldCode` with `newCode`.
-  e.g. `using.sub(dotNum, dn);`
 
 2.`vars`
 
@@ -57,6 +55,16 @@ e.g. `vars.new(i, number, 0)`
   vars.new(i, number, 0);
   loop.for.range(from: 1, to: 5, in: vars.i).codes({
       ter.otpt(vars.i);
+  });
+  ```
+
+- `if`: Run the code in `codes` when the condition is true, otherwise runs `else`. Use `when` to write the condition.
+    e.g.
+  ```PLang
+  loop.if.when(=(1, 1)).codes({
+      ter.otpt("1 = 1.");
+  }).else({
+      ter.otpt("1 ~= 1.");
   });
   ```
 
