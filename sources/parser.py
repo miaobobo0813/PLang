@@ -81,7 +81,7 @@ class Parser:
                 self.definedVarName.append(name.value)
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
-            if not modifier in self.definedVarName:
+            if not modifier.value in self.definedVarName:
                 self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' hasn't been defined")
             self.nextToken('.', "Missing '.' between modifiers")
             check = self.nextToken()
