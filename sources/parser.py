@@ -54,9 +54,13 @@ class Parser:
             else:
                 self.errors.append(f"Line: {token.fromPos[0]}~{token.toPos[0]}, Column: {token.fromPos[1]}~{token.toPos[1]}: Unknown keyword: {token.value}")
         elif token.type == TokenType.SYMBOL:
+            self.nextToken()
             self.errors.append(f"Line: {token.fromPos[0]}~{token.toPos[0]}, Column: {token.fromPos[1]}~{token.toPos[1]}: Unexpected symbol: {token.value} (No extra ; allow)")
+            return tipNode(text=token.value)
         else:
+            self.nextToken()
             self.errors.append(f"Line: {token.fromPos[0]}~{token.toPos[0]}, Column: {token.fromPos[1]}~{token.toPos[1]}: Unknown keyword: {token.value}")
+            return tipNode(text=token.value)
     
     def parseVars(self):
         self.nextToken('vars', "Missing 'vars' keyword")

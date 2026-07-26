@@ -68,7 +68,8 @@ class Lexer:
                 return Token(TokenType.MODIFIER, value, fromPos=fromPos, toPos=toPos)
 
         pos = self._getPositionInfo(self.pos)
-        self.errors.append(f"Line: {pos[0]}, Column: {pos[1]}: Unknown character: {char}")
+        self.errors.append(f"Line: {pos[0]}~{pos[0]}, Column: {pos[1]}~{pos[1]}: Unknown character: {char}")
+        self.pos += 1
         return Token(TokenType.UNKNOWN, "", fromPos=pos, toPos=pos)
     
     def scan_all(self):
