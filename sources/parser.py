@@ -8,6 +8,9 @@ class Parser:
         self.pos = 0
         self.currentModifyTarget = None
         self.errors = []
+        self.notSupportVarName = ['int', 'char', 'bool', 'struct', 'double', 'long', 'float']
+        self.notSupportVarNameIncludes = {"(", ')', '[', ']', '{', '}', ';', ',', '.'}.union(OPERATORS, SPECIAL_OPERATORS)
+        self.definedVarName = []
     
     def nowToken(self):
         if self.pos < len(self.tokens):
@@ -70,8 +73,16 @@ class Parser:
             value = self.parseExpression()
             self.nextToken(')', "Missing ')' after args")
             self.nextToken(';', "Missing ';' after vars statement")
+            if name.value in self.notSupportVarName or any(keyword in name.value for keyword in self.notSupportVarNameIncludes):
+                self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' contains invalid character(s)")
+            if name.value in self.definedVarName:
+                self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' has been defined")
+            else:
+                self.definedVarName.append(name.value)
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
+            if not modifier in self.definedVarName:
+                self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' hasn't been defined")
             self.nextToken('.', "Missing '.' between modifiers")
             check = self.nextToken()
             if check.value == 'modify':
@@ -105,7 +116,10 @@ class Parser:
         elif token.type == TokenType.KEYWORD and token.value == 'vars':
             self.nextToken()
             self.nextToken('.', "Missing '.' between keyword and modifier")
-            return varsNode(name=self.nextToken().value)
+            name = self.nextToken()
+            if not name.value in self.definedVarName:
+                self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable '{name.value}' hasn't been defined.")
+            return varsNode(name=name.value)
         elif token.value == 'var':
             self.nextToken()
             if self.currentModifyTarget is None:
@@ -143,8 +157,10 @@ class Parser:
             elif modifier1.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
@@ -159,8 +175,10 @@ class Parser:
             elif modifier2.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
@@ -201,17 +219,27 @@ class Parser:
                     self.nextToken(',', "Missing ',' between variable args")
                     value = self.parseExpression()
                     self.nextToken(')', "Missing ')' after variable declaration")
+                    if varName.value in self.notSupportVarName or any(keyword in varName.value for keyword in self.notSupportVarNameIncludes):
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' contains invalid character(s)")
+                    if varName.value in self.definedVarName:
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined")
+                    self.definedVarName.append(varName.value)
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()
+                    if not varName.value in self.definedVarName:
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable '{varName.value}' hasn't been defined")
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken(')', "Missing ')' after range declaration")
-                
             elif modifier1.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
+                if var != None and var.value != None:
+                    self.definedVarName.remove(var.name)
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
@@ -239,16 +267,27 @@ class Parser:
                     self.nextToken(',', "Missing ',' between variable args")
                     value = self.parseExpression()
                     self.nextToken(')', "Missing ')' after variable declaration")
+                    if varName.value in self.notSupportVarName or any(keyword in varName.value for keyword in self.notSupportVarNameIncludes):
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' contains invalid character(s)")
+                    if varName.value in self.definedVarName:
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined.")
+                    self.definedVarName.append(varName.value)
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()
+                    if not varName.value in self.definedVarName:
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable '{varName.value}' hasn't been defined")
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken(')', "Missing ')' after range declaration")
             elif modifier2.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
+                if var != None and var.value != None:
+                    self.definedVarName.remove(var.name)
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
@@ -290,15 +329,19 @@ class Parser:
             elif modifier1.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             elif modifier1.value == 'else':
                 self.nextToken('(', "Missing '(' after else modifier")
                 self.nextToken('{', "Missing '{' after else modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after else body")
                 self.nextToken(')', "Missing ')' after else body")
             else:
@@ -313,15 +356,19 @@ class Parser:
             elif modifier2.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             elif modifier2.value == 'else':
                 self.nextToken('(', "Missing '(' after else modifier")
                 self.nextToken('{', "Missing '{' after else modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after else body")
                 self.nextToken(')', "Missing ')' after else body")
             else:
@@ -336,15 +383,19 @@ class Parser:
             elif modifier3.value == 'codes':
                 self.nextToken('(', "Missing '(' after codes modifier")
                 self.nextToken('{', "Missing '{' after codes modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             elif modifier3.value == 'else':
                 self.nextToken('(', "Missing '(' after else modifier")
                 self.nextToken('{', "Missing '{' after else modifier")
+                beforeDefinedVarNames = self.definedVarName
                 while self.nowToken().value != '}':
                     elseStatements.append(self.parseStatement())
+                self.definedVarName = beforeDefinedVarNames
                 self.nextToken('}', "Missing '}' after else body")
                 self.nextToken(')', "Missing ')' after else body")
             else:
@@ -378,9 +429,11 @@ class Parser:
             value = self.nextToken()
             self.nextToken(')', "Missing ')' after inpt statement")
             self.nextToken(';', "Missing ';' after inpt statement")
+            if not value.value in self.definedVarName:
+                self.errors.append(f"Line: {value.fromPos[0]}~{value.toPos[0]}, Column: {value.fromPos[1]}~{value.toPos[1]}: Variable '{value.value}' hasn't been defined")
             return terInptNode(var=value.value)
         else:
-            self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Unknown terminal modifier: {self.nowToken().value}.")
+            self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Unknown terminal modifier: {self.nowToken().value}")
     
     def parseUsing(self):
         self.nextToken('using', "Missing 'using' keyword")
