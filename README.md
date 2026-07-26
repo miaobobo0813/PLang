@@ -89,7 +89,7 @@ e.g. `vars.new(i, number, 0)`
 
 5.`operators`
 
-`operators.<(left, right)` and `<(left, right)` are both available. (Just like using using.sub(operators., ) to omit the prefix.)
+`operators.<(left, right)` and `<(left, right)` are both available.
 
 **modifiers**
 1. `+`
