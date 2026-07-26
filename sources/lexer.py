@@ -46,7 +46,7 @@ class Lexer:
         if char == '"':
             self.pos += 1
             start = self.pos
-            while self.pos < len(self.source) and self.source[self.pos] != '"':
+            while self.pos < len(self.source) and (self.source[self.pos] != '"' or (self.source[self.pos] == '"' and self.source[self.pos-1] == '\\')):
                 self.pos += 1
             value = self.source[start:self.pos]
             self.pos += 1

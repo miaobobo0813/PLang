@@ -8,19 +8,38 @@ import os
 import sys
 import tempfile
 import argparse
+import re
 
-def compiler(inputFile, outputFile=None, verbose=None, run=False):
+def formatGPPOutput(output: str, compiler: compile):
+    lines = output.split('\n')
+    formatted = []
+    for line in lines:
+        if '.cpp:' in line and 'error:' in line:
+            if "In function 'int main()':" in line:
+                continue
+            else:
+                pattern = r"error:\s*(.+?)(?:\n|$)"
+                match = re.search(pattern, line)
+                if match:
+                    errorLine = match.group(1)
+                    for (old, new) in compiler.typeFormat.items():
+                        errorLine = errorLine.replace(new, old)
+                    errorLine = f"Line: ?, Column: ?: {errorLine}"
+                    formatted.append(errorLine)
+    return formatted
+
+def compiler(inputFile, outputFile=None, verbose=None, run=False, noOutput=False):
     if sys.platform != 'win32':
-        print('Error: PLang only support for Windows.')
+        print('PLang only support for Windows.', file=sys.stderr)
         return 1
     try:
         with open(inputFile, 'r', encoding='utf-8') as f:
             codes = f.read()
     except FileNotFoundError:
-        print(f'Error: file \"{inputFile}\" do not exist.')
+        print(f'File \"{inputFile}\" do not exist.', file=sys.stderr)
         return 1
     except Exception as e:
-        print(f'Error: {e}')
+        print(f'{e}', file=sys.stderr)
         return -1
 
     if outputFile:
@@ -33,13 +52,13 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
         tokens = lexer.scan_all()
         if lexer.errors != []:
             for error in lexer.errors:
-                print(error)
+                print(error, file=sys.stderr)
             return 1
         parser = Parser(tokens)
         ast = parser.parseProgram()
         if parser.errors != []:
             for error in parser.errors:
-                print(error)
+                print(error, file=sys.stderr)
             return 1
         if verbose:
             print("AST Tree:")
@@ -55,15 +74,25 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
             f.write(cCode)
             cFile = f.name
 
-        cmd = ['g++', cFile, '-o', exeFile]
+        cmd = ['g++', cFile]
+        if noOutput:
+            cmd.append('-fsyntax-only')
+        else:
+            cmd.append('-o')
+            cmd.append(exeFile)
         result = subprocess.run(cmd, capture_output=True, text=True)
         os.remove(cFile)
 
         if result.returncode != 0:
-            print(result.stderr)
+            errors = formatGPPOutput(result.stderr, compiler=compiler)
+            for error in errors:
+                print(error, file=sys.stderr)
             return 1
 
         print("Build success!")
+
+        if noOutput:
+            return 0
 
         if run:
             result = subprocess.run([exeFile], capture_output=True, text=True)
@@ -73,10 +102,10 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False):
 
         return 0
     except KeyError as e:
-        print(f"Unknown variable {e}")
+        print(f"Unknown variable {e}", file=sys.stderr)
         return 1
     except Exception as e:
-        print(e)
+        print(e, file=sys.stderr)
         return 1
 
 def main():
@@ -85,6 +114,7 @@ def main():
     parser.add_argument('-o', '--output', help='')
     parser.add_argument('-v', '--verbose', action='store_true', help='Show more details about the compile.')
     parser.add_argument('-r', '--run', action='store_true', help='Run the .exe after compile.')
+    parser.add_argument('--no-output', action='store_true', help='DO NOT compile .exe file.')
     parser.add_argument('--version', action='version', version=f'PLang Compiler {__version__}')
 
     args = parser.parse_args()
@@ -94,9 +124,10 @@ def main():
         return 1
 
     if not os.path.exists(args.file):
-        print(f'Error: {args.file} do not exists. Check the spell and try again.')
+        print(f'{args.file} do not exists. Check the spell and try again.')
+        return 1
 
-    return compiler(args.file, args.output, verbose=args.verbose, run=args.run)
+    return compiler(args.file, args.output, verbose=args.verbose, run=args.run, noOutput=args.no_output)
 
 if __name__ == "__main__":
     sys.exit(main())

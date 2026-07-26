@@ -32,10 +32,11 @@ class compile:
         methodName = f'visit_{type(node).__name__}'
         if hasattr(self, methodName):
             return getattr(self, methodName)(node)
-        raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}.")
+        raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}. This shouldn't happen. Please report this issue at https://github.com/miaobobo0813/PLang/issues and paste your PLang code.")
     
     def visit_programNode(self, node):
         self.addCode("#ifdef _WIN32\n#include<windows.h>\n#endif\n#include<iostream>\n#include<string>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
+        self.nowColumn=1
         for statement in node.statements:
             self.visit(statement)
         self.addCode("return 0; }")
