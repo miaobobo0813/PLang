@@ -7,6 +7,7 @@ class TokenType(Enum):
     SYMBOL = auto()
     OPERATOR = auto()
     NUMBER = auto()
+    DOTNUM = auto()
     TEXT = auto() 
     BOOLEAN = auto()
     TYPE = auto()

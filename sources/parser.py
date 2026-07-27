@@ -11,6 +11,7 @@ class Parser:
         self.notSupportVarName = ['int', 'char', 'bool', 'struct', 'double', 'long', 'float']
         self.notSupportVarNameIncludes = {"(", ')', '[', ']', '{', '}', ';', ',', '.'}.union(OPERATORS, SPECIAL_OPERATORS)
         self.definedVarName = []
+        self.definedVarTypes = {}
     
     def nowToken(self):
         if self.pos < len(self.tokens):
@@ -33,6 +34,53 @@ class Parser:
             return token
         token = self.tokens[len(self.tokens)-1]
         return Token(TokenType.EOF, "", fromPos=token.fromPos, toPos=token.toPos)
+    
+    def _getExpressionType(self, node):
+        if isinstance(node, numberNode):
+            return 'number'
+        if isinstance(node, dotNumNode):
+            return 'dotNum'
+        if isinstance(node, textNode):
+            return 'text'
+        if isinstance(node, booleanNode):
+            return 'boolean'
+        if isinstance(node, varsNode):
+            return self.definedVarTypes.get(node.name)
+        if isinstance(node, opNode):
+            leftType = self._getExpressionType(node.left)
+            rightType = self._getExpressionType(node.right)
+            if leftType in {'number', 'dotNum'} and rightType in {'number', 'dotNum'}:
+                return 'dotNum' if 'dotNum' in {leftType, rightType} else 'number'
+            if leftType == rightType:
+                return leftType
+        return None
+
+    def _isCompatibleType(self, targetType, valueType):
+        if targetType is None or valueType is None:
+            return False
+        if targetType == valueType:
+            return True
+        if targetType in {'number', 'dotNum'} and valueType in {'number', 'dotNum'}:
+            return True
+        return False
+
+    def _isComparable(self, leftType, rightType):
+        if leftType is None or rightType is None:
+            return False
+        if leftType == rightType and (not leftType in {'text', 'boolean'}) and (not rightType in {'text', 'boolean'}):
+            return True
+        if leftType in {'number', 'dotNum'} and rightType in {'number', 'dotNum'}:
+            return True
+        return False
+    
+    def _isComputable(self, leftType, rightType):
+        if leftType is None or rightType is None:
+            return False
+        if leftType == rightType and leftType != 'text' and rightType != 'text':
+            return True
+        if leftType in {'number', 'dotNum'} and rightType in {'number', 'dotNum'}:
+            return True
+        return False
     
     def parseProgram(self):
         statement = []
@@ -83,6 +131,7 @@ class Parser:
                 self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' has been defined")
             else:
                 self.definedVarName.append(name.value)
+                self.definedVarTypes[name.value] = typeToken.value
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
             if not modifier.value in self.definedVarName:
@@ -96,6 +145,10 @@ class Parser:
                 self.nextToken(')', "Missing ')' after args")
                 self.nextToken(';', "Missing ';' after vars statement")
                 self.currentModifyTarget = None
+                declaredType = self.definedVarTypes.get(modifier.value)
+                expressionType = self._getExpressionType(value)
+                if declaredType is not None and expressionType is not None and not self._isCompatibleType(declaredType, expressionType):
+                    self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' cannot be modified with a value of type '{expressionType}'")
                 return varsModifyNode(name=modifier.value, value=value)
             else:
                 self.errors.append(f"Line: {check.fromPos[0]}~{check.toPos[0]}, Column: {check.fromPos[1]}~{check.toPos[1]}: Unknown modifier: {check.value}")
@@ -104,7 +157,10 @@ class Parser:
         token = self.nowToken()
         if token.type == TokenType.NUMBER:
             self.nextToken()
-            return numberNode(value=float(token.value))
+            return numberNode(value=token.value)
+        elif token.type == TokenType.DOTNUM:
+            self.nextToken()
+            return dotNumNode(value=token.value)
         elif token.type == TokenType.TEXT:
             self.nextToken()
             return textNode(value=token.value)
@@ -128,7 +184,7 @@ class Parser:
             self.nextToken()
             if self.currentModifyTarget is None:
                 self.errors.append(f"Line: {token.fromPos[0]}~{token.toPos[0]}, Column: {token.fromPos[1]}~{token.toPos[1]}: Unexpected 'var' without modifying a variable")
-                return numberNode(value=0)
+                return numberNode(value='0')
             return varsNode(name=self.currentModifyTarget)
         else:
             self.nextToken()
@@ -140,10 +196,28 @@ class Parser:
             self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Unknown operator: {operator.value}")
         self.nextToken('(', "Missing '(' after operator")
         left = self.parseExpression()
-        self.nextToken(',', "Missing ',' between operator args")
-        right = self.parseExpression()
+        leftType = self._getExpressionType(left)
+        if operator.value != '~':
+            self.nextToken(',', "Missing ',' between operator args")
+            right = self.parseExpression()
+            self.nextToken(')', "Missing ')' after operator args")
+            rightType = self._getExpressionType(right)
+            if operator.value in {'+', '-', '*', '`'}:
+                if not self._isComputable(leftType, rightType):
+                    self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Operator '{operator.value}' cannot be applied to types '{leftType}' and '{rightType}'")
+            if operator.value in {'/'} and (leftType != 'boolean' or rightType != 'boolean'):
+                self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Operator '{operator.value}' can only be applied to boolean types, but got '{leftType}' and '{rightType}'")
+            if operator.value in {'='}:
+                if not self._isCompatibleType(leftType, rightType):
+                    self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Operator '{operator.value}' cannot be applied to types '{leftType}' and '{rightType}'")
+            if operator.value in {'<', '>', '</=', '>/='}:
+                if not self._isComparable(leftType, rightType):
+                    self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Operator '{operator.value}' cannot be applied to types '{leftType}' and '{rightType}'")
+            return opNode(operator=operator.value, left=left, right=right)
         self.nextToken(')', "Missing ')' after operator args")
-        return opNode(operator=operator.value, left=left, right=right)
+        if leftType != 'boolean':
+            self.errors.append(f"Line: {operator.fromPos[0]}~{operator.toPos[0]}, Column: {operator.fromPos[1]}~{operator.toPos[1]}: Operator '{operator.value}' can only be applied to boolean types, but got '{leftType}'")
+        return opNode(operator=operator.value, left=left, right=None)
 
     def parseLoop(self):
         self.nextToken('loop', "Missing 'loop' keyword")
@@ -228,6 +302,7 @@ class Parser:
                     if varName.value in self.definedVarName:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined")
                     self.definedVarName.append(varName.value)
+                    self.definedVarTypes[varName.value] = varType.value
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()
@@ -276,6 +351,7 @@ class Parser:
                     if varName.value in self.definedVarName:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined.")
                     self.definedVarName.append(varName.value)
+                    self.definedVarTypes[varName.value] = varType.value
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
                 else:
                     varName = self.nextToken()

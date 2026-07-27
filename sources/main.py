@@ -22,8 +22,11 @@ def formatGPPOutput(output: str, compiler: compile):
                 match = re.search(pattern, line)
                 if match:
                     errorLine = match.group(1)
+                    errorLine = re.sub(r'\s*\[-[a-zA-Z0-9-]+\]\s*$', '', errorLine)
                     for (old, new) in compiler.typeFormat.items():
                         errorLine = errorLine.replace(new, old)
+                    errorLine = errorLine.replace('const char*', 'text')
+                    errorLine = re.sub(r'const\schar\s\[\d+\]', 'text', errorLine)
                     errorLine = f"Line: ?, Column: ?: {errorLine}"
                     formatted.append(errorLine)
     return formatted
@@ -32,6 +35,7 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False, noOutput=False
     if sys.platform != 'win32':
         print('PLang only support for Windows.', file=sys.stderr)
         return 1
+    
     try:
         with open(inputFile, 'r', encoding='utf-8') as f:
             codes = f.read()
@@ -67,7 +71,7 @@ def compiler(inputFile, outputFile=None, verbose=None, run=False, noOutput=False
         compiler = compile()
         cCode = compiler.visit(ast)
         if verbose:
-            print("C Code:")
+            print("C++ Code:")
             print(cCode)
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False) as f:

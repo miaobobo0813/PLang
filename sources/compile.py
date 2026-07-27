@@ -23,7 +23,6 @@ class compile:
             '>': '>', 
             '<': '<', 
         }
-        self.errors = []
 
     def addCode(self, code):
         self.compileCodes.append(code)
@@ -43,9 +42,10 @@ class compile:
         return "".join(self.compileCodes)
     
     def visit_numberNode(self, node):
-        if node.value.is_integer():
-            return str(int(node.value))
-        return str(node.value)
+        return node.value
+    
+    def visit_dotNumNode(self, node):
+        return node.value
     
     def visit_textNode(self, node):
         return f'"{node.value}"'
@@ -64,8 +64,11 @@ class compile:
     
     def visit_opNode(self, node):
         leftCode = self.visit(node.left)
-        rightCode = self.visit(node.right)
-        return f"({leftCode} {self.operatorFormat[node.operator]} {rightCode})"
+        if node.right != None:
+            rightCode = self.visit(node.right)
+            return f"({leftCode} {self.operatorFormat[node.operator]} {rightCode})"
+        else:
+            return f"({self.operatorFormat[node.operator]} {leftCode})"
     
     def visit_generalNode(self, node):
         return 

@@ -3,7 +3,11 @@ from typing import Any, List
 
 @dataclass
 class numberNode:
-    value: float
+    value: str
+
+@dataclass
+class dotNumNode:
+    value: str
 
 @dataclass
 class textNode:

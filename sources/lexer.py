@@ -27,7 +27,11 @@ class Lexer:
             start = self.pos
             while self.pos < len(self.source) and (self.source[self.pos].isdigit() or self.source[self.pos] == '.'):
                 self.pos += 1
-            return Token(TokenType.NUMBER, self.source[start:self.pos], fromPos=self._getPositionInfo(start), toPos=self._getPositionInfo(self.pos-1))
+            val = self.source[start:self.pos]
+            if '.' in val:
+                return Token(TokenType.DOTNUM, val, fromPos=self._getPositionInfo(start), toPos=self._getPositionInfo(self.pos-1))
+            else:
+                return Token(TokenType.NUMBER, val, fromPos=self._getPositionInfo(start), toPos=self._getPositionInfo(self.pos-1))
         if char in SYMBOLS:
             self.pos += 1
             return Token(TokenType.SYMBOL, char, fromPos=self._getPositionInfo(self.pos-1), toPos=self._getPositionInfo(self.pos-1))
@@ -36,7 +40,7 @@ class Lexer:
             startPos = self.pos
             endPos = self.pos
             self.pos += 1
-            if self.source[self.pos] == '/':
+            if self.pos < len(self.source) and self.source[self.pos] == '/':
                 firstChar += self.source[self.pos]
                 self.pos += 1
                 firstChar += self.source[self.pos]
