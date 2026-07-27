@@ -115,7 +115,7 @@ class Parser:
         self.nextToken('.', "Missing '.' between keyword and modifier")
         modifier = self.nextToken()
         if modifier.type != TokenType.MODIFIER:
-            self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Unknown modifier \"{modifier.value}\"")
+            self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Unknown modifier '{modifier.value}'")
         if modifier.value == 'new':
             self.nextToken('(', "Missing '(' after modifier")
             name = self.nextToken()
