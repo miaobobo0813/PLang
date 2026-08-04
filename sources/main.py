@@ -1,8 +1,8 @@
-from .lexer import Lexer
-from .parser import Parser
-from .compile import compile
+from lexer import Lexer
+from parser import Parser
+from compile import compile
 from pathlib import Path
-from .__init__ import __version__
+from __init__ import __version__
 import subprocess
 import os
 import sys
@@ -32,10 +32,10 @@ def formatGPPOutput(output: str, compiler: compile):
     return formatted
 
 def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=False, codes=None):
-    if sys.platform != 'win32':
-        print('PLang only support for Windows.', file=sys.stderr)
-        return 1
-
+    if sys.platform == 'win32':
+        extension = '.exe'
+    else:
+        extension = ''
     if codes == None and inputFile != None:
         try:
             with open(inputFile, 'r', encoding='utf-8') as f:
@@ -50,9 +50,9 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
     if outputFile:
         exeFile = outputFile
     elif inputFile != None:
-        exeFile = Path(inputFile).stem+'.exe'
+        exeFile = Path(inputFile).stem+extension
     else:
-        exeFile = "PLang Code Output.exe"
+        exeFile = "PLang Code Output"+extension
 
     try:
         if codes == None:

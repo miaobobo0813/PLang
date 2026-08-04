@@ -52,17 +52,17 @@ class loopWhileNode:
     body: List[Any]
 
 @dataclass
+class forRangeVarNode:
+    name: str
+    value: Any
+    newType: str
+
+@dataclass
 class loopForNode:
     var: forRangeVarNode
     rangeFrom: Any
     rangeTo: Any
     body: List[Any]
-
-@dataclass
-class forRangeVarNode:
-    name: str
-    value: Any
-    newType: str
 
 @dataclass
 class loopNode:

@@ -3,4 +3,8 @@ sources/__main__.exe
 __main__.exe
 test.plang
 test.exe
+test
 .vscode
+*build
+*dist
+main.spec
