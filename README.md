@@ -19,7 +19,7 @@ A simple, readable programming language that compiles to C++.
 ```Powershell
 git clone https://github.com/miaobobo0813/PLang.git
 Set-Location PLang\sources
-python -m pip install PyInstaller
+python -m pip install pyinstaller
 python -m PyInstaller --onefile main.py
 ```
 

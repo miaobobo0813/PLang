@@ -34,7 +34,7 @@ class compile:
         raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}. This shouldn't happen. Please report this issue at https://github.com/miaobobo0813/PLang/issues and paste your PLang code.")
     
     def visit_programNode(self, node):
-        self.addCode("#ifdef _WIN32\n#include<windows.h>\n#endif\n#include<iostream>\n#include<string>\nint main() { \n#ifdef _WIN32\nSetConsoleOutputCP(CP_UTF8);\n#endif\n")
+        self.addCode("#include<iostream>\n#include<string>\nint main() { ")
         self.nowColumn=1
         for statement in node.statements:
             self.visit(statement)
