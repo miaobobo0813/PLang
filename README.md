@@ -34,11 +34,15 @@ python3 -m PyInstaller --onefile main.py
 #### Linux
 ```bash
 git clone https://github.com/miaobobo0813/PLang.git
-cd PLang/sources
-# You also can use yum/pacman to install.
+cd PLang
+# You also can use yum/pacman for other Linuxs.
 sudo apt update
-sudo apt install python3-pyinstaller
-python3 -m pyinstaller --onefile main.py
+sudo apt install python3.12-venv python3-pip
+python3 -m venv venv
+source venv/bin/activate
+pip install pyinstaller
+cd sources
+pyinstaller --path=. --onefile main.py
 ```
 
 ### Command Line Options
