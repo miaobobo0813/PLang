@@ -454,32 +454,33 @@ class Parser:
             else:
                 self.errors.append(f"Line: {modifier2.fromPos[0]}~{modifier2.toPos[0]}, Column: {modifier2.fromPos[1]}~{modifier2.toPos[1]}: Unknown loop modifier: {modifier2.value}")
 
-            self.nextToken('.', "Missing '.' between if modifiers")
-            modifier3 = self.nextToken()
-            if modifier3.value == 'when':
-                self.nextToken('(', "Missing '(' after when modifier")
-                condition = self.parseExpression()
-                self.nextToken(')', "Missing ')' after when condition")
-            elif modifier3.value == 'codes':
-                self.nextToken('(', "Missing '(' after codes modifier")
-                self.nextToken('{', "Missing '{' after codes modifier")
-                beforeDefinedVarNames = self.definedVarName
-                while self.nowToken().value != '}':
-                    statements.append(self.parseStatement())
-                self.definedVarName = beforeDefinedVarNames
-                self.nextToken('}', "Missing '}' after codes body")
-                self.nextToken(')', "Missing ')' after codes body")
-            elif modifier3.value == 'else':
-                self.nextToken('(', "Missing '(' after else modifier")
-                self.nextToken('{', "Missing '{' after else modifier")
-                beforeDefinedVarNames = self.definedVarName
-                while self.nowToken().value != '}':
-                    elseStatements.append(self.parseStatement())
-                self.definedVarName = beforeDefinedVarNames
-                self.nextToken('}', "Missing '}' after else body")
-                self.nextToken(')', "Missing ')' after else body")
-            else:
-                self.errors.append(f"Line: {modifier3.fromPos[0]}~{modifier3.toPos[0]}, Column: {modifier3.fromPos[1]}~{modifier3.toPos[1]}: Unknown loop modifier: {modifier3.value}")
+            if (self.nowToken().value != ';'):
+                self.nextToken('.', "Missing '.' between if modifiers")
+                modifier3 = self.nextToken()
+                if modifier3.value == 'when':
+                    self.nextToken('(', "Missing '(' after when modifier")
+                    condition = self.parseExpression()
+                    self.nextToken(')', "Missing ')' after when condition")
+                elif modifier3.value == 'codes':
+                    self.nextToken('(', "Missing '(' after codes modifier")
+                    self.nextToken('{', "Missing '{' after codes modifier")
+                    beforeDefinedVarNames = self.definedVarName
+                    while self.nowToken().value != '}':
+                        statements.append(self.parseStatement())
+                    self.definedVarName = beforeDefinedVarNames
+                    self.nextToken('}', "Missing '}' after codes body")
+                    self.nextToken(')', "Missing ')' after codes body")
+                elif modifier3.value == 'else':
+                    self.nextToken('(', "Missing '(' after else modifier")
+                    self.nextToken('{', "Missing '{' after else modifier")
+                    beforeDefinedVarNames = self.definedVarName
+                    while self.nowToken().value != '}':
+                        elseStatements.append(self.parseStatement())
+                    self.definedVarName = beforeDefinedVarNames
+                    self.nextToken('}', "Missing '}' after else body")
+                    self.nextToken(')', "Missing ')' after else body")
+                else:
+                    self.errors.append(f"Line: {modifier3.fromPos[0]}~{modifier3.toPos[0]}, Column: {modifier3.fromPos[1]}~{modifier3.toPos[1]}: Unknown loop modifier: {modifier3.value}")
 
             self.nextToken(';', "Missing ';' after if loop")
 

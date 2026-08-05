@@ -40,6 +40,12 @@ class Lexer:
             startPos = self.pos
             endPos = self.pos
             self.pos += 1
+            if self.source[self.pos] == '=':
+                self.pos += 1
+                endPos = self.pos
+                startPosInfo = self._getPositionInfo(startPos)
+                endPosInfo = self._getPositionInfo(endPos-1)
+                self.errors.append(f"Line: {startPosInfo[0]}~{endPosInfo[0]}, Column: {startPosInfo[1]}~{endPosInfo[1]}: Unknown operator {self.source[startPos:endPos]}")
             if self.pos < len(self.source) and self.source[self.pos] == '/':
                 firstChar += self.source[self.pos]
                 self.pos += 1

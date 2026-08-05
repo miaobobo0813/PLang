@@ -1,134 +1,131 @@
-# PLang & PLang compiler
+# PLang Compiler
 
-NOTICE: This project is in development. Some of the code in this file is not final.
+> **NOTICE**: This project is under active development. Some features may not be final.
 
-### PLang
+A simple, readable programming language that compiles to C++.
 
-#### **Basic usage**
-`keyword.modifier().modifier()...;`
-e.g. `vars.new(i, number, 0)`
+## Features
 
-#### **Keywords**
+- **Simple syntax** - Keyword-modifier chains make code easy to read and write
+- **Cross-platform** - Works on Windows, macOS, and Linux
+- **Compiles to C++** - Leverages G++ for native performance
+- **Less dependencies** - Only requires Python and G++
 
-1.`using`
+## Quick Start
 
-**modifiers**
-- `use(fileName)`: use the source from `fileName` in your code.
-  e.g. `using.use(student);`
-- `tips(text)`: add a comment to the line.
-  e.g. `using.tips("TODO: Here's something to do.");`
+### Build
 
-2.`vars`
+#### Windows
+```Powershell
+git clone https://github.com/miaobobo0813/PLang.git
+Set-Location PLang\sources
+python -m pip install PyInstaller
+python -m PyInstaller --onefile main.py
+```
 
-**modifiers**
-- `new(name, type, value)`: create a new variable in the code.
-    e.g. `vars.new(n, number, 0);`
-- `[variable name]`: returns the variable value.
-    e.g. `vars.n`
+#### macOS 
+```zsh
+git clone https://github.com/miaobobo0813/PLang.git
+cd PLang/sources
+python3 -m pip install pyinstaller
+python3 -m PyInstaller --onefile main.py
+```
 
-- modifiers
-- - `modify(value)`: modify the variable to `value`. You can use `var` in this modifier to refer to the variable.
-    e.g. `vars.n.modify(+(var, 1));`
+#### Linux
+```bash
+git clone https://github.com/miaobobo0813/PLang.git
+cd PLang/sources
+# You also can use yum/pacman to install.
+sudo apt update
+sudo apt install python3-pyinstaller
+python3 -m pyinstaller --onefile main.py
+```
 
-3.`ter`
+### Command Line Options
 
-**modifiers**
-- `otpt(text)`: print text in the terminal.
-    e.g. `ter.otpt("Hello world!");`
-- `inpt(variable)`: input a value and save it to the `variable`.
-    e.g. `ter.inpt(vars.n);`
+| Option | Description |
+|--------|-------------|
+| `file` | Path to your `.plang` source file |
+| `--code CODE` | Execute code directly from string |
+| `-o, --output FILE` | Specify output executable name |
+| `-v, --verbose` | Show AST and generated C++ code |
+| `-r, --run` | Run the compiled program after building |
+| `--no-output` | Check syntax without generating executable |
+| `--version` | Display compiler version |
 
-4.`loop`
+## Example
 
-**modifiers**
-- `while`: when the condition is true, run the code in `codes`. Use `when` to write the condition.
-    e.g. 
-  ```PLang
-  loop.while.when(</=(vars.n, vars.k)).codes({
-      ter.otpt(vars.n);
-      vars.n.modify(+(var, 1));
-  });
-  ```
-- `for`: run the code while the variable is in the specified range. use `.range(number, number, variable)` to write a range.
-    e.g.
-  ```PLang
-  vars.new(i, number, 0);
-  loop.for.range(1, 5, vars.i).codes({
-      ter.otpt(vars.i);
-  });
-  ```
+Here's a PLang program that calculates factorial:
 
-- `if`: Run the code in `codes` when the condition is true, otherwise runs `else`. Use `when` to write the condition.
-    e.g.
-  ```PLang
-  loop.if.when(=(1, 1)).codes({
-      ter.otpt("1 = 1.");
-  }).else({
-      ter.otpt("1 ~= 1.");
-  });
-  ```
+```plang
+using.tips("Factorial Calculator");
 
-- `stop()`: terminate the loop.
-    e.g.
-    ```PLang
-    loop.while.when(yes).codes({
-        ter.otpt("This while only run for once.");
-        loop.stop();
-    });
-    ```
+vars.new(n, number, 5);
+vars.new(result, number, 1);
+vars.new(i, number, 1);
 
-- `skip()`: skips the current iteration and proceeds to the next one.
-    e.g.
-    ```PLang
-    loop.while.when(yes).codes({
-        ter.otpt("This code will run.");
-        loop.skip();
-        ter.otpt("This code will be skipped.");
-    });
-    ```
+loop.for.range(1, vars.n, vars.i).codes({
+    vars.result.modify(*(var, vars.i));
+});
 
-5.`operators`
+ter.otpt("Factorial of ");
+ter.otpt(vars.n);
+ter.otpt(" is ");
+ter.otpt(vars.result);
+ter.otpt("\n");
+```
 
-`operators.<(left, right)` and `<(left, right)` are both available.
+Save as `factorial.plang` and run:
+```bash
+python -m sources.main factorial.plang -r
+# Output: Factorial of 5 is 120
+```
 
-**modifiers**
-1. `+`
-    - `+(number, number)` returns `number` (also can use `dotNum`)
-2. `-`
-    - `-(number, number)` returns `number` (also can use `dotNum`)
-3. `*`
-    - `*(number, number)` returns `number` (also can use `dotNum`)
-4. `` ` `` : division
-    - `` `(number, number)`` returns `dotNum`
-5. `%`
-    - `%(number, number)` returns `number`
-6. `/`: or
-    - `/(boolean, boolean)` returns `boolean`
-7. `&`: and
-    - `&(boolean, boolean)` returns `boolean`
-8. `=`: equal
-    - `=(number, number)` returns `boolean`
-9. `~`: opposite
-    - `~(boolean)` returns `boolean`
-10. `<`: less than
-    - `<(number, number)` returns  `boolean` (also can use `dotNum`)
-11. `>`: greater than
-    - `>(number, number)` returns  `boolean` (also can use `dotNum`)
-12. `</=`: less than or equal
-    - `</=(number, number)` returns  `boolean` (also can use `dotNum`)
-13. `>/=`: greater than or equal
-    - `>/=(number, number)` returns  `boolean` (also can use `dotNum`)
+## How It Works
 
-#### **Types**
-1. `number`: a number.
-2. `dotNum`: a decimal number (float/double).
-3. `text`: a text (string).
-4. `boolean`: a bool value. it has 2 values: `yes` and `no`.
+```
+PLang Source → Lexer → Parser → C++ Generator → G++ → Executable
+```
 
----
-### PLang compiler
+1. **Lexer** - Tokenizes PLang source code
+2. **Parser** - Builds an Abstract Syntax Tree (AST)
+3. **Compiler** - Generates C++ code from AST
+4. **G++** - Compiles to native executable
 
-##### Dependencies
+## Dependencies
 
-1. `g++`: We need it to compile C++ code.
-2. `python`: Compiler write by python.
+- **Python 3.6+** - To run the compiler
+- **G++ (GCC)** - To compile generated C++ code
+
+  | Platform | Install Command |
+  |----------|-----------------|
+  | Windows | Install [MinGW-w64](https://www.mingw-w64.org/) |
+  | macOS | `xcode-select --install` |
+  | Linux | `sudo apt install g++` (Ubuntu/Debian) |
+
+## Project Structure
+
+```
+PLang/
+├── sources/
+│   ├── __init__.py      # Package version
+│   ├── compile.py       # C++ code generator
+│   ├── lexer.py         # Lexical analyzer
+│   ├── main.py          # CLI entry point
+│   ├── nodes.py         # AST node definitions
+│   ├── parser.py        # Syntax analyzer
+│   └── tokens.py        # Token definitions
+├── plang.bat            # Windows launcher
+├── setup.ps1            # Windows installation script
+├── Language_Guide.md    # Complete language documentation
+└── README.md            # This file
+```
+
+## Documentation
+
+- [Language Guide](Language_Guide.md) - Complete PLang syntax reference
+- [Report Issues](https://github.com/miaobobo0813/PLang/issues)
+
+## License
+
+[MIT](LICENSE)
