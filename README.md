@@ -45,6 +45,11 @@ cd sources
 pyinstaller --path=. --onefile main.py
 ```
 
+### Install
+
+1. Download release from [release page](https://github.com/miaobobo0813/PLang/releases).
+2. Follow the steps written in release note to install the compiler.
+
 ### Command Line Options
 
 | Option | Description |
