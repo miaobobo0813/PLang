@@ -230,6 +230,8 @@ Operators can be used in two ways:
 | `` ` `` | Division | `` `(left, right) `` | dotNum |
 | `%` | Modulo | `%(left, right)` | number |
 
+NOTE: `-15` and other negative literals are not supported. Please use `-(0, 15)`.
+
 **Examples:**
 ```plang
 using.tips("Arithmetic operators");
@@ -397,3 +399,4 @@ Common errors:
 3. **Use meaningful names**: `vars.new(age, number, 0)` is better than `vars.new(a, number, 0)`
 4. **Check loop conditions**: Ensure loops will terminate
 5. **Test incrementally**: Test small pieces before building larger programs
+6. **Negative number**: Use `-(0, xxx)` to refer to negative number, such as `-(0, 0.5)`, `-(0, 1000)`

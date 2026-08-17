@@ -1,6 +1,7 @@
 class compile:
     def __init__(self):
         self.compileCodes = []
+        self.beforeCodes = ["#include<iostream>", "#include<string>"]
         self.typeFormat = {
             'number': 'int',
             'text': 'std::string',
@@ -26,6 +27,9 @@ class compile:
 
     def addCode(self, code):
         self.compileCodes.append(code)
+
+    def addBeforeCode(self, code):
+        self.beforeCodes.append(code)
     
     def visit(self, node):
         methodName = f'visit_{type(node).__name__}'
@@ -34,12 +38,11 @@ class compile:
         raise ValueError(f"Unknown keyword or modifier: {type(node).__name__}. This shouldn't happen. Please report this issue at https://github.com/miaobobo0813/PLang/issues and paste your PLang code.")
     
     def visit_programNode(self, node):
-        self.addCode("#include<iostream>\n#include<string>\nint main() { ")
-        self.nowColumn=1
+        self.addCode("int main() { ")
         for statement in node.statements:
             self.visit(statement)
         self.addCode("return 0; }")
-        return "".join(self.compileCodes)
+        return "\n".join(self.beforeCodes)+"\n"+"".join(self.compileCodes)
     
     def visit_numberNode(self, node):
         return node.value
@@ -54,7 +57,7 @@ class compile:
         return "true" if node.value else "false"
 
     def visit_varsNewNode(self, node):
-        cType = self.typeFormat.get(node.type, 'int')
+        cType = self.typeFormat.get(node.type, 'text')
         valueCode = self.visit(node.value)
         self.addCode(f"{cType} {node.name} = {valueCode};")
     
