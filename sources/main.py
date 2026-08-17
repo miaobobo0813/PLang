@@ -25,9 +25,8 @@ def formatGPPOutput(output: str, compiler: compile):
                     errorLine = re.sub(r'\s*\[-[a-zA-Z0-9-]+\]\s*$', '', errorLine)
                     for (old, new) in compiler.typeFormat.items():
                         errorLine = errorLine.replace(new, old)
-                    errorLine = errorLine.replace('const char*', 'text')
-                    errorLine = re.sub(r'const\schar\s\[\d+\]', 'text', errorLine)
-                    errorLine = f"Line: ?, Column: ?: {errorLine}"
+                    errorLine = re.sub(r'const\schar\[\d+\]', 'text', errorLine)
+                    errorLine = f"Line: ?, Column: ?: {errorLine.capitalize()}"
                     formatted.append(errorLine)
     return formatted
 
@@ -84,14 +83,16 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
             f.write(cCode)
             cFile = f.name
 
-        cmd = ['g++', cFile]
+        cmd = ['g++', cFile, '-O2']
         if noOutput:
             cmd.append('-fsyntax-only')
         else:
             cmd.append('-o')
             cmd.append(exeFile)
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        os.remove(cFile)
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+        finally:
+            os.remove(cFile)
 
         if result.returncode != 0:
             errors = formatGPPOutput(result.stderr, compiler=compiler)

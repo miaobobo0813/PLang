@@ -12,6 +12,7 @@ class Parser:
         self.notSupportVarNameIncludes = {"(", ')', '[', ']', '{', '}', ';', ',', '.'}.union(OPERATORS, SPECIAL_OPERATORS)
         self.definedVarName = []
         self.definedVarTypes = {}
+        self.definedTypes = ['number', 'dotNum', 'text', 'boolean']
     
     def nowToken(self):
         if self.pos < len(self.tokens):
@@ -47,6 +48,8 @@ class Parser:
         if isinstance(node, varsNode):
             return self.definedVarTypes.get(node.name)
         if isinstance(node, opNode):
+            if node.operator in {'=', '~', '/', '<', '>', '</=', '>/='}:
+                return 'boolean'
             leftType = self._getExpressionType(node.left)
             rightType = self._getExpressionType(node.right)
             if leftType in {'number', 'dotNum'} and rightType in {'number', 'dotNum'}:
@@ -129,6 +132,13 @@ class Parser:
                 self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' contains invalid character(s)")
             if name.value in self.definedVarName:
                 self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' has been defined")
+            elif not typeToken.value in self.definedTypes:
+                self.errors.append(f"Line: {typeToken.fromPos[0]}~{typeToken.toPos[0]}, Column: {typeToken.fromPos[1]}~{typeToken.toPos[1]}: Unknown variable type '{typeToken.value}'")
+                self.definedVarName.append(name.value)
+            elif not self._isCompatibleType(typeToken.value, self._getExpressionType(value)):
+                self.errors.append(f"Line: {typeToken.fromPos[0]}~{typeToken.toPos[0]}, Column: {typeToken.fromPos[1]}~{typeToken.toPos[1]}: Cannot convert value to type '{typeToken.value}'")
+                self.definedVarName.append(name.value)
+                self.definedVarTypes[name.value] = typeToken.value
             else:
                 self.definedVarName.append(name.value)
                 self.definedVarTypes[name.value] = typeToken.value
@@ -178,7 +188,7 @@ class Parser:
             self.nextToken('.', "Missing '.' between keyword and modifier")
             name = self.nextToken()
             if not name.value in self.definedVarName:
-                self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable '{name.value}' hasn't been defined.")
+                self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable '{name.value}' hasn't been defined")
             return varsNode(name=name.value)
         elif token.value == 'var':
             self.nextToken()
@@ -301,6 +311,14 @@ class Parser:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' contains invalid character(s)")
                     if varName.value in self.definedVarName:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined")
+                    if not varType in self.definedTypes:
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Unknown variable type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(value)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot convert value to type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(rangeFrom)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot assign range start value to loop variable type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(rangeTo)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot assign range end value to loop variable type '{varType.value}'")
                     self.definedVarName.append(varName.value)
                     self.definedVarTypes[varName.value] = varType.value
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
@@ -308,6 +326,14 @@ class Parser:
                     varName = self.nextToken()
                     if not varName.value in self.definedVarName:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable '{varName.value}' hasn't been defined")
+                    else:
+                        varType = self.definedVarTypes.get(varName.value)
+                        if not varType in self.definedTypes:
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Unknown variable type '{varName.value}'")
+                        elif not self._isCompatibleType(varType, self._getExpressionType(rangeFrom)):
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Cannot assign range start value to loop variable type '{varName.value}'")
+                        elif not self._isCompatibleType(varType, self._getExpressionType(rangeTo)):
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Cannot assign range end value to loop variable type '{varName.value}'")
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken(')', "Missing ')' after range declaration")
             elif modifier1.value == 'codes':
@@ -322,7 +348,7 @@ class Parser:
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
-                self.errors.append(f"Line: {modifier1.fromPos[0]}~{modifier1.toPos[0]}, Column: {modifier1.fromPos[1]}~{modifier1.toPos[1]}: Unknown loop modifier: {self.nowToken().value}.")
+                self.errors.append(f"Line: {modifier1.fromPos[0]}~{modifier1.toPos[0]}, Column: {modifier1.fromPos[1]}~{modifier1.toPos[1]}: Unknown loop modifier: {self.nowToken().value}")
             
             self.nextToken('.', "Missing '.' between for modifiers")
             modifier2 = self.nextToken()
@@ -349,7 +375,15 @@ class Parser:
                     if varName.value in self.notSupportVarName or any(keyword in varName.value for keyword in self.notSupportVarNameIncludes):
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' contains invalid character(s)")
                     if varName.value in self.definedVarName:
-                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined.")
+                        self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable name '{varName.value}' has been defined")
+                    if not varType in self.definedTypes:
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Unknown variable type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(value)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot convert value to type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(rangeFrom)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot assign range start value to loop variable type '{varType.value}'")
+                    elif not self._isCompatibleType(varType.value, self._getExpressionType(rangeTo)):
+                        self.errors.append(f"Line: {varType.fromPos[0]}~{varType.toPos[0]}, Column: {varType.fromPos[1]}~{varType.toPos[1]}: Cannot assign range end value to loop variable type '{varType.value}'")
                     self.definedVarName.append(varName.value)
                     self.definedVarTypes[varName.value] = varType.value
                     var = forRangeVarNode(name=varName.value, value=value, newType=varType.value)
@@ -357,6 +391,14 @@ class Parser:
                     varName = self.nextToken()
                     if not varName.value in self.definedVarName:
                         self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Variable '{varName.value}' hasn't been defined")
+                    else:
+                        varType = self.definedVarTypes.get(varName.value)
+                        if not varType in self.definedTypes:
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Unknown variable type '{varName.value}'")
+                        elif not self._isCompatibleType(varType, self._getExpressionType(rangeFrom)):
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Cannot assign range start value to loop variable type '{varName.value}'")
+                        elif not self._isCompatibleType(varType, self._getExpressionType(rangeTo)):
+                            self.errors.append(f"Line: {varName.fromPos[0]}~{varName.toPos[0]}, Column: {varName.fromPos[1]}~{varName.toPos[1]}: Cannot assign range end value to loop variable type '{varName.value}'")
                     var = forRangeVarNode(name=varName.value, value=None, newType='')
                 self.nextToken(')', "Missing ')' after range declaration")
             elif modifier2.value == 'codes':
@@ -371,7 +413,7 @@ class Parser:
                 self.nextToken('}', "Missing '}' after codes body")
                 self.nextToken(')', "Missing ')' after codes body")
             else:
-                self.errors.append(f"Line: {modifier2.fromPos[0]}~{modifier2.toPos[0]}, Column: {modifier2.fromPos[1]}~{modifier2.toPos[1]}: Unknown loop modifier: {self.nowToken().value}.")
+                self.errors.append(f"Line: {modifier2.fromPos[0]}~{modifier2.toPos[0]}, Column: {modifier2.fromPos[1]}~{modifier2.toPos[1]}: Unknown loop modifier: {self.nowToken().value}")
 
             if var is None:
                 self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Missing variable for for loop")
@@ -485,9 +527,9 @@ class Parser:
             self.nextToken(';', "Missing ';' after if loop")
 
             if condition is None:
-                self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Missing condition for if loop.")
+                self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Missing condition for if loop")
             if statements == []:
-                self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Missing body for if loop.")
+                self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Missing body for if loop")
 
             return loopIfNode(condition=condition, body=statements,elseBody=elseStatements)
         else:
