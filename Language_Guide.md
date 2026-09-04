@@ -34,6 +34,8 @@ Comments are written using `using.tips()`.
 | Modifier | Description | Example |
 |----------|-------------|---------|
 | `new(name, type, value)` | Create a new variable | `vars.new(age, number, 18);` |
+| `new(name, func, args, body)` | Create a function | `vars.new(greet, func, {vars.new(name, text, "");}{using.tips("body");});` |
+| `[name](args...)` | Call a function | `vars.greet(vars.name.modify("PLang"););` |
 | `[name]` | Reference a variable | `vars.age` |
 | `modify(value)` | Change a variable's value (you can use `var` to reference the old value) | `vars.age.modify(+(var, 1));` |
 
@@ -45,6 +47,7 @@ Comments are written using `using.tips()`.
 | `dotNum` | Floating point | `3.14`, `-0.5` |
 | `text` | String | `"Hello"`, `"PLang"` |
 | `boolean` | True/False | `yes`, `no` |
+| `func` | Function | `{vars.new(arg, type, value);}{statements...}` |
 
 #### Examples
 
@@ -54,6 +57,9 @@ vars.new(x, number, 5);
 vars.new(pi, dotNum, 3.14159);
 vars.new(name, text, "John");
 vars.new(isReady, boolean, yes);
+
+vars.new(greet, func, {vars.new(name, text, "");}{ter.otpt(vars.name);});
+vars.greet(vars.name.modify("PLang"););
 
 using.tips("Variable modification");
 vars.x.modify(+(var, 10));  using.tips("x becomes 15");

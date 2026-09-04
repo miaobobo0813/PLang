@@ -7,6 +7,7 @@ class compile:
             'text': 'std::string',
             'boolean': 'bool', 
             'dotNum': 'double', 
+            'func': 'void',
             '': '', 
         }
         self.operatorFormat = {
@@ -60,6 +61,23 @@ class compile:
         cType = self.typeFormat.get(node.type, 'text')
         valueCode = self.visit(node.value)
         self.addCode(f"{cType} {node.name} = {valueCode};")
+
+    def visit_varsNewFuncNode(self, node):
+        arguments = ", ".join(
+            f"{self.typeFormat.get(variable.type, 'text')} {variable.name}"
+            for variable in node.variables
+        )
+        functionCodes = self.compileCodes
+        self.compileCodes = []
+        for statement in node.statements:
+            self.visit(statement)
+        body = "".join(self.compileCodes)
+        self.compileCodes = functionCodes
+        self.addBeforeCode(f"void {node.name}({arguments}) {{" + body + "}")
+
+    def visit_varsFuncCallNode(self, node):
+        arguments = ", ".join(self.visit(argument.value) for argument in node.arguments)
+        self.addCode(f"{node.name}({arguments});")
     
     def visit_varsModifyNode(self, node):
         valueCode = self.visit(node.value)

@@ -12,7 +12,7 @@ class Parser:
         self.notSupportVarNameIncludes = {"(", ')', '[', ']', '{', '}', ';', ',', '.'}.union(OPERATORS, SPECIAL_OPERATORS)
         self.definedVarName = []
         self.definedVarTypes = {}
-        self.definedTypes = ['number', 'dotNum', 'text', 'boolean']
+        self.definedTypes = ['number', 'dotNum', 'text', 'boolean', 'func']
     
     def nowToken(self):
         if self.pos < len(self.tokens):
@@ -125,6 +125,35 @@ class Parser:
             self.nextToken(',', "Missing ',' between args")
             typeToken = self.nextToken()
             self.nextToken(',', "Missing ',' between args")
+            if typeToken.value == 'func':
+                variables = []
+                statements = []
+                outerDefinedVarName = self.definedVarName
+                outerDefinedVarTypes = self.definedVarTypes
+                self.definedVarName = []
+                self.definedVarTypes = {}
+
+                self.nextToken('{', "Missing '{' before function args")
+                while self.nowToken().value != '}':
+                    variable = self.parseVars()
+                    if isinstance(variable, varsNewNode):
+                        variables.append(variable)
+                self.nextToken('}', "Missing '}' after function args")
+                self.nextToken('{', "Missing '{' before function body")
+                while self.nowToken().value != '}':
+                    statements.append(self.parseStatement())
+                self.nextToken('}', "Missing '}' after function body")
+                self.nextToken(')', "Missing ')' after function declaration")
+                self.nextToken(';', "Missing ';' after function declaration")
+
+                self.definedVarName = outerDefinedVarName
+                self.definedVarTypes = outerDefinedVarTypes
+                if name.value in self.definedVarName:
+                    self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable name '{name.value}' has been defined")
+                else:
+                    self.definedVarName.append(name.value)
+                    self.definedVarTypes[name.value] = 'func'
+                return varsNewFuncNode(name=name.value, statements=statements, variables=variables)
             value = self.parseExpression()
             self.nextToken(')', "Missing ')' after args")
             self.nextToken(';', "Missing ';' after vars statement")
@@ -146,8 +175,56 @@ class Parser:
         else:
             if not modifier.value in self.definedVarName:
                 self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' hasn't been defined")
+            if self.nowToken().value == '(':
+                arguments = []
+                if self.definedVarTypes.get(modifier.value) != 'func':
+                    self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' is not a function")
+                self.nextToken('(', "Missing '(' after function name")
+                while self.nowToken().value != ')':
+                    self.nextToken('vars', "Missing 'vars' before function argument")
+                    self.nextToken('.', "Missing '.' between vars keyword and function argument")
+                    argumentName = self.nextToken()
+                    self.nextToken('.', "Missing '.' between argument variable and modifier")
+                    argumentModifier = self.nextToken()
+                    if argumentModifier.value != 'modify':
+                        self.errors.append(f"Line: {argumentModifier.fromPos[0]}~{argumentModifier.toPos[0]}, Column: {argumentModifier.fromPos[1]}~{argumentModifier.toPos[1]}: Expected 'modify' for function argument")
+                    self.nextToken('(', "Missing '(' after argument modify modifier")
+                    value = self.parseExpression()
+                    self.nextToken(')', "Missing ')' after argument modify value")
+                    arguments.append(varsModifyNode(name=argumentName.value, value=value))
+                    if self.nowToken().value == ';':
+                        self.nextToken(';')
+                    elif self.nowToken().value != ')':
+                        self.errors.append(f"Line: {self.nowToken().fromPos[0]}~{self.nowToken().toPos[0]}: Missing ';' between function arguments")
+                self.nextToken(')', "Missing ')' after function call")
+                self.nextToken(';', "Missing ';' after function call")
+                return varsFuncCallNode(name=modifier.value, arguments=arguments)
             self.nextToken('.', "Missing '.' between modifiers")
             check = self.nextToken()
+            if check.value == '(':
+                arguments = []
+                functionType = self.definedVarTypes.get(modifier.value)
+                if functionType != 'func':
+                    self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' is not a function")
+                while self.nowToken().value != ')':
+                    self.nextToken('vars', "Missing 'vars' before function argument")
+                    self.nextToken('.', "Missing '.' between vars keyword and function argument")
+                    argumentName = self.nextToken()
+                    self.nextToken('.', "Missing '.' between argument variable and modifier")
+                    argumentModifier = self.nextToken()
+                    if argumentModifier.value != 'modify':
+                        self.errors.append(f"Line: {argumentModifier.fromPos[0]}~{argumentModifier.toPos[0]}, Column: {argumentModifier.fromPos[1]}~{argumentModifier.toPos[1]}: Expected 'modify' for function argument")
+                    self.nextToken('(', "Missing '(' after argument modify modifier")
+                    value = self.parseExpression()
+                    self.nextToken(')', "Missing ')' after argument modify value")
+                    arguments.append(varsModifyNode(name=argumentName.value, value=value))
+                    if self.nowToken().value == ';':
+                        self.nextToken(';')
+                    elif self.nowToken().value != ')':
+                        self.errors.append(f"Line: {self.nowToken().fromPos[0]}~{self.nowToken().toPos[0]}: Missing ';' between function arguments")
+                self.nextToken(')', "Missing ')' after function call")
+                self.nextToken(';', "Missing ';' after function call")
+                return varsFuncCallNode(name=modifier.value, arguments=arguments)
             if check.value == 'modify':
                 self.currentModifyTarget = modifier.value
                 self.nextToken('(', "Missing '(' after modifier")

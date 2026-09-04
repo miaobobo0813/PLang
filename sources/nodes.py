@@ -28,6 +28,17 @@ class varsNewNode:
     type: str
 
 @dataclass
+class varsNewFuncNode:
+    name: str
+    statements: List[Any]
+    variables: List[varsNewNode]
+
+@dataclass
+class varsFuncCallNode:
+    name: str
+    arguments: List[Any]
+
+@dataclass
 class varsModifyNode:
     name: str
     value: Any

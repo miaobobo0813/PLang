@@ -35,7 +35,7 @@ SPECIAL_OPERATORS = {
     '</=', '>/='
 }
 TYPES = {
-    'number', 'dotNum', 'text', 'boolean'
+    'number', 'dotNum', 'text', 'boolean', 'func'
 }
 BOOLEANS = {
     'yes', 'no'
