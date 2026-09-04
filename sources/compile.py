@@ -64,7 +64,7 @@ class compile:
 
     def visit_varsNewFuncNode(self, node):
         arguments = ", ".join(
-            f"{self.typeFormat.get(variable.type, 'text')} {variable.name}"
+            f"{self.typeFormat.get(variable.type, 'text')} {variable.name} = {self.visit(variable.value)}"
             for variable in node.variables
         )
         functionCodes = self.compileCodes
@@ -73,11 +73,20 @@ class compile:
             self.visit(statement)
         body = "".join(self.compileCodes)
         self.compileCodes = functionCodes
-        self.addBeforeCode(f"void {node.name}({arguments}) {{" + body + "}")
+        returnType = self.typeFormat.get(node.returnType, 'void') or 'void'
+        self.addBeforeCode(f"{returnType} {node.name}({arguments}) {{" + body + "}")
 
     def visit_varsFuncCallNode(self, node):
         arguments = ", ".join(self.visit(argument.value) for argument in node.arguments)
+        if node.isExpression:
+            return f"{node.name}({arguments})"
         self.addCode(f"{node.name}({arguments});")
+
+    def visit_varsFuncReturnNode(self, node):
+        if node.value is None:
+            self.addCode("return;")
+        else:
+            self.addCode(f"return {self.visit(node.value)};")
     
     def visit_varsModifyNode(self, node):
         valueCode = self.visit(node.value)

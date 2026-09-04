@@ -34,10 +34,11 @@ Comments are written using `using.tips()`.
 | Modifier | Description | Example |
 |----------|-------------|---------|
 | `new(name, type, value)` | Create a new variable | `vars.new(age, number, 18);` |
-| `new(name, func, args, body)` | Create a function | `vars.new(greet, func, {vars.new(name, text, "");}{using.tips("body");});` |
+| `new(name, func(returnType), {args}{body})` | Create a function | `vars.new(greet, func, {vars.new(name, text, "");}{using.tips("body");});` |
 | `[name](args...)` | Call a function | `vars.greet(vars.name.modify("PLang"););` |
 | `[name]` | Reference a variable | `vars.age` |
 | `modify(value)` | Change a variable's value (you can use `var` to reference the old value) | `vars.age.modify(+(var, 1));` |
+| `[name].return(value)` | Return `value` in function | `vars.dijkstra.return();` `vars.bfs.return(vars.ans);` |
 
 #### Types
 
@@ -47,7 +48,7 @@ Comments are written using `using.tips()`.
 | `dotNum` | Floating point | `3.14`, `-0.5` |
 | `text` | String | `"Hello"`, `"PLang"` |
 | `boolean` | True/False | `yes`, `no` |
-| `func` | Function | `{vars.new(arg, type, value);}{statements...}` |
+| `func(returnType)` | Function(returns `returnType`) | `{vars.new(arg, type, value);}{statements...}` |
 
 #### Examples
 
@@ -58,7 +59,7 @@ vars.new(pi, dotNum, 3.14159);
 vars.new(name, text, "John");
 vars.new(isReady, boolean, yes);
 
-vars.new(greet, func, {vars.new(name, text, "");}{ter.otpt(vars.name);});
+vars.new(greet, func(), {vars.new(name, text, "");}{ter.otpt(vars.name);});
 vars.greet(vars.name.modify("PLang"););
 
 using.tips("Variable modification");
@@ -131,6 +132,8 @@ loop.for.range(start, end, variable).codes({
     using.tips("Code to execute");
 });
 ```
+
+**NOTE**: The scope of for loop is [start, end], or start...end not start..<end.
 
 **Example:**
 ```plang
@@ -325,6 +328,8 @@ vars.new(a, number, 0);
 vars.new(b, number, 1);
 vars.new(i, number, 0);
 
+ter.otpt(vars.b);
+ter.otpt(" ");
 loop.for.range(1, 10, vars.i).codes({
     vars.new(fib, number, +(vars.a, vars.b));
     ter.otpt(vars.fib);
@@ -406,3 +411,5 @@ Common errors:
 4. **Check loop conditions**: Ensure loops will terminate
 5. **Test incrementally**: Test small pieces before building larger programs
 6. **Negative number**: Use `-(0, xxx)` to refer to negative number, such as `-(0, 0.5)`, `-(0, 1000)`
+7. **About null value**: There is no null value in PLang. You can use an value you like to refer to null value such as `""`, `-1`.
+8. **C++ like**: The PLang compiler will compile your code into C++ code, so some syntax like invalid variable name are depend on C++ syntax rules.

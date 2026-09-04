@@ -12,7 +12,10 @@ class Parser:
         self.notSupportVarNameIncludes = {"(", ')', '[', ']', '{', '}', ';', ',', '.'}.union(OPERATORS, SPECIAL_OPERATORS)
         self.definedVarName = []
         self.definedVarTypes = {}
+        self.definedFuncReturnTypes = {}
         self.definedTypes = ['number', 'dotNum', 'text', 'boolean', 'func']
+        self.currentFunctionName = None
+        self.currentFunctionReturnType = None
     
     def nowToken(self):
         if self.pos < len(self.tokens):
@@ -47,6 +50,8 @@ class Parser:
             return 'boolean'
         if isinstance(node, varsNode):
             return self.definedVarTypes.get(node.name)
+        if isinstance(node, varsFuncCallNode):
+            return self.definedFuncReturnTypes.get(node.name)
         if isinstance(node, opNode):
             if node.operator in {'=', '~', '/', '<', '>', '</=', '>/='}:
                 return 'boolean'
@@ -124,6 +129,14 @@ class Parser:
             name = self.nextToken()
             self.nextToken(',', "Missing ',' between args")
             typeToken = self.nextToken()
+            returnType = ''
+            if typeToken.value == 'func':
+                self.nextToken('(', "Missing '(' after func type")
+                if self.nowToken().value != ')':
+                    returnType = self.nextToken().value
+                    if returnType not in self.definedTypes[:-1]:
+                        self.errors.append(f"Line: {typeToken.fromPos[0]}~{typeToken.toPos[0]}, Column: {typeToken.fromPos[1]}~{typeToken.toPos[1]}: Unknown function return type '{returnType}'")
+                self.nextToken(')', "Missing ')' after func return type")
             self.nextToken(',', "Missing ',' between args")
             if typeToken.value == 'func':
                 variables = []
@@ -140,8 +153,14 @@ class Parser:
                         variables.append(variable)
                 self.nextToken('}', "Missing '}' after function args")
                 self.nextToken('{', "Missing '{' before function body")
+                previousFunctionName = self.currentFunctionName
+                previousFunctionReturnType = self.currentFunctionReturnType
+                self.currentFunctionName = name.value
+                self.currentFunctionReturnType = returnType or None
                 while self.nowToken().value != '}':
                     statements.append(self.parseStatement())
+                self.currentFunctionName = previousFunctionName
+                self.currentFunctionReturnType = previousFunctionReturnType
                 self.nextToken('}', "Missing '}' after function body")
                 self.nextToken(')', "Missing ')' after function declaration")
                 self.nextToken(';', "Missing ';' after function declaration")
@@ -153,7 +172,8 @@ class Parser:
                 else:
                     self.definedVarName.append(name.value)
                     self.definedVarTypes[name.value] = 'func'
-                return varsNewFuncNode(name=name.value, statements=statements, variables=variables)
+                    self.definedFuncReturnTypes[name.value] = returnType or None
+                return varsNewFuncNode(name=name.value, returnType=returnType, statements=statements, variables=variables)
             value = self.parseExpression()
             self.nextToken(')', "Missing ')' after args")
             self.nextToken(';', "Missing ';' after vars statement")
@@ -173,6 +193,24 @@ class Parser:
                 self.definedVarTypes[name.value] = typeToken.value
             return varsNewNode(name=name.value, value=value, type=typeToken.value)
         else:
+            if self.currentFunctionName == modifier.value and self.nowToken().value == '.':
+                self.nextToken('.', "Missing '.' before function return modifier")
+                returnModifier = self.nextToken()
+                if returnModifier.value != 'return':
+                    self.errors.append(f"Line: {returnModifier.fromPos[0]}~{returnModifier.toPos[0]}, Column: {returnModifier.fromPos[1]}~{returnModifier.toPos[1]}: Unknown function modifier '{returnModifier.value}'")
+                self.nextToken('(', "Missing '(' after return modifier")
+                value = None
+                if self.nowToken().value != ')':
+                    value = self.parseExpression()
+                self.nextToken(')', "Missing ')' after return value")
+                self.nextToken(';', "Missing ';' after return statement")
+                if self.currentFunctionReturnType is None and value is not None:
+                    self.errors.append(f"Line: {returnModifier.fromPos[0]}~{returnModifier.toPos[0]}, Column: {returnModifier.fromPos[1]}~{returnModifier.toPos[1]}: Void function cannot return a value")
+                elif self.currentFunctionReturnType is not None and value is None:
+                    self.errors.append(f"Line: {returnModifier.fromPos[0]}~{returnModifier.toPos[0]}, Column: {returnModifier.toPos[1]}~{returnModifier.toPos[1]}: Function must return a value of type '{self.currentFunctionReturnType}'")
+                elif value is not None and not self._isCompatibleType(self.currentFunctionReturnType, self._getExpressionType(value)):
+                    self.errors.append(f"Line: {returnModifier.fromPos[0]}~{returnModifier.toPos[0]}, Column: {returnModifier.toPos[1]}~{returnModifier.toPos[1]}: Cannot return value of type '{self._getExpressionType(value)}', expected '{self.currentFunctionReturnType}'")
+                return varsFuncReturnNode(value=value)
             if not modifier.value in self.definedVarName:
                 self.errors.append(f"Line: {modifier.fromPos[0]}~{modifier.toPos[0]}, Column: {modifier.fromPos[1]}~{modifier.toPos[1]}: Variable '{modifier.value}' hasn't been defined")
             if self.nowToken().value == '(':
@@ -266,6 +304,29 @@ class Parser:
             name = self.nextToken()
             if not name.value in self.definedVarName:
                 self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable '{name.value}' hasn't been defined")
+            if self.nowToken().value == '(':
+                arguments = []
+                if self.definedVarTypes.get(name.value) != 'func':
+                    self.errors.append(f"Line: {name.fromPos[0]}~{name.toPos[0]}, Column: {name.fromPos[1]}~{name.toPos[1]}: Variable '{name.value}' is not a function")
+                self.nextToken('(', "Missing '(' after function name")
+                while self.nowToken().value != ')':
+                    self.nextToken('vars', "Missing 'vars' before function argument")
+                    self.nextToken('.', "Missing '.' between vars keyword and function argument")
+                    argumentName = self.nextToken()
+                    self.nextToken('.', "Missing '.' between argument variable and modifier")
+                    argumentModifier = self.nextToken()
+                    if argumentModifier.value != 'modify':
+                        self.errors.append(f"Line: {argumentModifier.fromPos[0]}~{argumentModifier.toPos[0]}, Column: {argumentModifier.fromPos[1]}~{argumentModifier.toPos[1]}: Expected 'modify' for function argument")
+                    self.nextToken('(', "Missing '(' after argument modify modifier")
+                    value = self.parseExpression()
+                    self.nextToken(')', "Missing ')' after argument modify value")
+                    arguments.append(varsModifyNode(name=argumentName.value, value=value))
+                    if self.nowToken().value == ';':
+                        self.nextToken(';')
+                    elif self.nowToken().value != ')':
+                        self.errors.append(f"Line: {self.nowToken().fromPos[0]}~{self.nowToken().toPos[0]}: Missing ';' between function arguments")
+                self.nextToken(')', "Missing ')' after function call")
+                return varsFuncCallNode(name=name.value, arguments=arguments, isExpression=True)
             return varsNode(name=name.value)
         elif token.value == 'var':
             self.nextToken()

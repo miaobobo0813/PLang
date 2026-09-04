@@ -30,6 +30,7 @@ class varsNewNode:
 @dataclass
 class varsNewFuncNode:
     name: str
+    returnType: str
     statements: List[Any]
     variables: List[varsNewNode]
 
@@ -37,6 +38,11 @@ class varsNewFuncNode:
 class varsFuncCallNode:
     name: str
     arguments: List[Any]
+    isExpression: bool = False
+
+@dataclass
+class varsFuncReturnNode:
+    value: Any
 
 @dataclass
 class varsModifyNode:
