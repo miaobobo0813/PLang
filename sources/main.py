@@ -54,6 +54,7 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
         exeFile = "PLang Code Output"+extension
 
     try:
+        print(f"\r[1/4] Scanning tokens...", end="     ", flush=True)
         if codes == None:
             lexer = Lexer("")
         else:
@@ -63,12 +64,14 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
             for error in lexer.errors:
                 print(error, file=sys.stderr)
             return 1
+        print(f"\r[2/4] Parsing AST...", end="     ", flush=True)
         parser = Parser(tokens)
         ast = parser.parseProgram()
         if parser.errors != []:
             for error in parser.errors:
                 print(error, file=sys.stderr)
             return 1
+        print(f"\r[3/4] Generating C++...", end="     ", flush=True)
         if verbose:
             print("AST Tree:")
             print(ast)
@@ -83,6 +86,7 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
             f.write(cCode)
             cFile = f.name
 
+        print(f"\r[4/4] Compiling C++...", end="     ", flush=True)
         cmd = ['g++', cFile, '-O2']
         if noOutput:
             cmd.append('-fsyntax-only')
@@ -100,7 +104,7 @@ def compiler(inputFile=None, outputFile=None, verbose=None, run=False, noOutput=
                 print(error, file=sys.stderr)
             return 1
 
-        print("Build success!")
+        print(f"\rBuild success!          ", flush=True)
 
         if noOutput:
             return 0
